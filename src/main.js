@@ -20,27 +20,6 @@ const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
-// Floor
-const floorGeometry = new THREE.PlaneGeometry(20, 20)
-const floorMaterial = new THREE.MeshStandardMaterial({
-  color: 0x808080,
-})
-
-const floor = new THREE.Mesh(floorGeometry, floorMaterial)
-floor.rotation.x = -Math.PI / 2
-scene.add(floor)
-
-// Robot Cube
-const geometry = new THREE.BoxGeometry(1, 1, 1)
-
-const material = new THREE.MeshStandardMaterial({
-  color: 0x0000ff,
-})
-
-const cube = new THREE.Mesh(geometry, material)
-cube.position.y = 0.5
-scene.add(cube)
-
 // Lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 1)
 scene.add(ambientLight)
@@ -49,9 +28,113 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 2)
 directionalLight.position.set(5, 10, 5)
 scene.add(directionalLight)
 
-// Animation Loop
+// Floor
+const floorGeometry = new THREE.PlaneGeometry(200, 200)
+
+const floorMaterial = new THREE.MeshStandardMaterial({
+  color: 0x808080
+})
+
+const floor = new THREE.Mesh(floorGeometry, floorMaterial)
+
+floor.rotation.x = -Math.PI / 2
+
+scene.add(floor)
+
+
+// ---------------- ROBOT ----------------
+
+// Create robot group
+const robot = new THREE.Group()
+
+// Body
+const bodyGeometry = new THREE.BoxGeometry(2, 1, 1)
+
+const bodyMaterial = new THREE.MeshStandardMaterial({
+  color: 0x0000ff
+})
+
+const body = new THREE.Mesh(bodyGeometry, bodyMaterial)
+
+robot.add(body)
+
+// Head
+const headGeometry = new THREE.BoxGeometry(0.7, 0.7, 0.7)
+
+const headMaterial = new THREE.MeshStandardMaterial({
+  color: 0x00ffff
+})
+
+const head = new THREE.Mesh(headGeometry, headMaterial)
+
+head.position.set(0, 0.9, 0)
+
+robot.add(head)
+
+// Left wheel
+const wheelGeometry = new THREE.BoxGeometry(0.3, 0.5, 0.5)
+
+const wheelMaterial = new THREE.MeshStandardMaterial({
+  color: 0x000000
+})
+
+const leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial)
+
+leftWheel.position.set(-1.2, -0.5, 0)
+
+robot.add(leftWheel)
+
+// Right wheel
+const rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial)
+
+rightWheel.position.set(1.2, -0.5, 0)
+
+robot.add(rightWheel)
+
+// Raise robot above ground
+robot.position.y = 1
+
+scene.add(robot)
+
+
+// ------------ MOVEMENT ------------
+
+// stores key states
+const keys = {}
+
+window.addEventListener('keydown', (event) => {
+  keys[event.key] = true
+})
+
+window.addEventListener('keyup', (event) => {
+  keys[event.key] = false
+})
+
+
+// Animation loop
 function animate() {
+
   requestAnimationFrame(animate)
+
+  // W
+  if (keys['w']) {
+    robot.position.z -= 0.1
+  }
+
+  // S
+  if (keys['s']) {
+    robot.position.z += 0.1
+  }
+
+  // A
+  if (keys['a']) {
+    robot.position.x -= 0.1
+  }
+
+  // D
+  if (keys['d']) {
+    robot.position.x += 0.1
+  }
 
   renderer.render(scene, camera)
 }
