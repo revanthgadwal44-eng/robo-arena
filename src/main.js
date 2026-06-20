@@ -13,7 +13,7 @@ const camera = new THREE.PerspectiveCamera(
   1000
 )
 
-camera.position.set(0, 5, 10)
+camera.position.set(0, 6, 10)
 
 // Renderer
 const renderer = new THREE.WebGLRenderer()
@@ -29,7 +29,7 @@ directionalLight.position.set(5, 10, 5)
 scene.add(directionalLight)
 
 // Floor
-const floorGeometry = new THREE.PlaneGeometry(200, 200)
+const floorGeometry = new THREE.PlaneGeometry(20, 20)
 
 const floorMaterial = new THREE.MeshStandardMaterial({
   color: 0x808080
@@ -41,6 +41,28 @@ floor.rotation.x = -Math.PI / 2
 
 scene.add(floor)
 
+function createWall(x, z, width, depth) {
+
+    const wallGeometry = new THREE.BoxGeometry(width,2,depth)
+
+    const wallMaterial = new THREE.MeshStandardMaterial({
+        color: 0x555555
+    })
+
+    const wall = new THREE.Mesh(
+        wallGeometry,
+        wallMaterial
+    )
+
+    wall.position.set(x,1,z)
+
+    scene.add(wall)
+}
+
+createWall(0,-10,20,1)
+createWall(0,10,20,1)
+createWall(-10,0,1,20)
+createWall(10,0,1,20)
 
 // ---------------- ROBOT ----------------
 
@@ -110,33 +132,64 @@ window.addEventListener('keyup', (event) => {
   keys[event.key] = false
 })
 
+const speed = 0.1
+const rotationSpeed = 0.03
 
 // Animation loop
 function animate() {
 
   requestAnimationFrame(animate)
 
-  // W
-  if (keys['w']) {
-    robot.position.z -= 0.1
-  }
+  // Rotate robot
+if (keys['a']) {
+    robot.rotation.y += rotationSpeed
+}
 
-  // S
-  if (keys['s']) {
-    robot.position.z += 0.1
-  }
+if (keys['d']) {
+    robot.rotation.y -= rotationSpeed
+}
 
-  // A
-  if (keys['a']) {
-    robot.position.x -= 0.1
-  }
+// Move relative to facing direction
+if (keys['w']) {
+    robot.position.x -= Math.sin(robot.rotation.y) * speed
+    robot.position.z -= Math.cos(robot.rotation.y) * speed
+}
 
-  // D
-  if (keys['d']) {
-    robot.position.x += 0.1
-  }
+if (keys['s']) {
+    robot.position.x += Math.sin(robot.rotation.y) * speed
+    robot.position.z += Math.cos(robot.rotation.y) * speed
+}
 
+// Camera offset behind robot
+const offset = new THREE.Vector3(0, 5, 8)
+
+offset.applyAxisAngle(
+    new THREE.Vector3(0,1,0),
+    robot.rotation.y
+)
+
+const desiredPosition = robot.position.clone().add(offset)
+
+// Smooth movement
+camera.position.lerp(desiredPosition,0.1)
+
+// Look at robot
+camera.lookAt(robot.position)
   renderer.render(scene, camera)
 }
 
 animate()
+
+window.addEventListener('resize',()=>{
+
+    camera.aspect =
+        window.innerWidth/window.innerHeight
+
+    camera.updateProjectionMatrix()
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    )
+
+})
