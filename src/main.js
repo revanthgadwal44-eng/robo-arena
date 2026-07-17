@@ -91,7 +91,7 @@ function animate() {
   cameraSystem.update(player.mesh.position, player.mesh.rotation.y);
   renderer.render(scene, camera);
 
-  ui.update(player.health, kills, waveManager.wave);
+  ui.update(player.health, kills, waveManager.wave, enemyManager.count);
 
   const meleeDamage = enemyManager.update(player.mesh.position);
   player.health -= meleeDamage;

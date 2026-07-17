@@ -101,7 +101,7 @@ export class BulletManager {
       const distance = bullet.mesh.position.distanceTo(playerPosition);
 
       if (distance < ENEMY_COLLISION_RADIUS) {
-        damage += ENEMY_BULLET_DAMAGE;
+        damage += bullet.damage ?? ENEMY_BULLET_DAMAGE;
         this._removeEnemyBullet(i);
         continue;
       }

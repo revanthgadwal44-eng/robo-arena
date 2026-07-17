@@ -41,6 +41,41 @@ export const ENEMY_COLOR = 0xff0000;
 export const ENEMY_DAMAGED_ORANGE = 0xff8800;
 export const ENEMY_DAMAGED_YELLOW = 0xffff00;
 
+/** Enemy archetypes — stats drive behavior via mesh.userData at spawn time. */
+export const ENEMY_TYPES = {
+  NORMAL: 'normal',
+  FAST: 'fast',
+  TANK: 'tank',
+};
+
+export const ENEMY_TYPE_STATS = {
+  [ENEMY_TYPES.NORMAL]: {
+    health: 50,
+    speed: 0.02,
+    damage: 10,
+    color: ENEMY_COLOR,
+  },
+  [ENEMY_TYPES.FAST]: {
+    health: 30,
+    speed: 0.04,
+    damage: 8,
+    color: 0xff6600,
+  },
+  [ENEMY_TYPES.TANK]: {
+    health: 100,
+    speed: 0.01,
+    damage: 15,
+    color: 0x880000,
+  },
+};
+
+/** Weighted spawn table — cumulative thresholds for random roll. */
+export const ENEMY_SPAWN_WEIGHTS = [
+  { type: ENEMY_TYPES.NORMAL, weight: 0.7 },
+  { type: ENEMY_TYPES.FAST, weight: 0.2 },
+  { type: ENEMY_TYPES.TANK, weight: 0.1 },
+];
+
 export const ARENA_SIZE = 20;
 export const ARENA_HALF = 10;
 export const WALL_HEIGHT = 2;

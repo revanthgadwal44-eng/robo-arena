@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Enemy } from '../entities/Enemy.js';
 import { Bullet } from '../entities/Bullet.js';
 import {
+  ENEMY_SPAWN_WEIGHTS,
   ENEMY_SHOOT_INTERVAL,
   ENEMY_BULLET_COLOR,
   BULLET_RADIUS,
@@ -23,9 +24,32 @@ export class EnemyManager {
     this._shootIntervalId = null;
   }
 
-  /** Spawns an enemy at world coordinates. */
-  spawn(x, z) {
-    const enemy = new Enemy(this.scene, x, z);
+  /**
+   * Picks an enemy type using weighted random selection.
+   * @returns {string}
+   */
+  _pickRandomType() {
+    const roll = Math.random();
+    let cumulative = 0;
+
+    for (const { type, weight } of ENEMY_SPAWN_WEIGHTS) {
+      cumulative += weight;
+      if (roll < cumulative) {
+        return type;
+      }
+    }
+
+    return ENEMY_SPAWN_WEIGHTS[0].type;
+  }
+
+  /**
+   * Spawns an enemy at world coordinates.
+   * @param {number} x
+   * @param {number} z
+   * @param {string} [type] — defaults to weighted random pick
+   */
+  spawn(x, z, type = this._pickRandomType()) {
+    const enemy = new Enemy(this.scene, x, z, type);
     this.enemies.push(enemy);
     return enemy;
   }
@@ -52,7 +76,8 @@ export class EnemyManager {
       this.scene.add(bulletMesh);
 
       const direction = playerPosition.clone().sub(enemy.mesh.position).normalize();
-      onEnemyShoot(new Bullet(bulletMesh, direction));
+      const { damage } = enemy.mesh.userData;
+      onEnemyShoot(new Bullet(bulletMesh, direction, damage));
     }
   }
 

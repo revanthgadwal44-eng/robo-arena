@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import {
-  ENEMY_HEALTH,
-  ENEMY_SPEED,
+  ENEMY_TYPES,
+  ENEMY_TYPE_STATS,
   ENEMY_MELEE_RANGE,
   ENEMY_MELEE_DAMAGE,
-  ENEMY_COLOR,
   ENEMY_DAMAGED_ORANGE,
   ENEMY_DAMAGED_YELLOW,
   BULLET_DAMAGE,
@@ -13,7 +12,7 @@ import {
 
 /** Shared geometry/material — cloned per enemy to preserve independent color changes. */
 const ENEMY_GEOMETRY = new THREE.BoxGeometry(1, 1, 1);
-const ENEMY_MATERIAL = new THREE.MeshStandardMaterial({ color: ENEMY_COLOR });
+const ENEMY_MATERIAL = new THREE.MeshStandardMaterial();
 
 /**
  * Single enemy entity with health, chase movement, and melee range check.
@@ -23,22 +22,34 @@ export class Enemy {
    * @param {THREE.Scene} scene
    * @param {number} x
    * @param {number} z
+   * @param {string} [type='normal']
    */
-  constructor(scene, x, z) {
+  constructor(scene, x, z, type = ENEMY_TYPES.NORMAL) {
+    const stats = ENEMY_TYPE_STATS[type] ?? ENEMY_TYPE_STATS[ENEMY_TYPES.NORMAL];
+
     this.mesh = new THREE.Mesh(ENEMY_GEOMETRY, ENEMY_MATERIAL.clone());
+    this.mesh.material.color.set(stats.color);
     this.mesh.position.set(x, PLAYER_Y, z);
-    this.health = ENEMY_HEALTH;
-    this.mesh.userData = { health: this.health };
+
+    this.health = stats.health;
+    this.mesh.userData = {
+      health: stats.health,
+      maxHealth: stats.health,
+      speed: stats.speed,
+      damage: stats.damage,
+      type,
+    };
+
     scene.add(this.mesh);
 
     /** Reused for chase direction — avoids allocating each frame. */
     this._direction = new THREE.Vector3();
   }
 
-  /** Moves toward the player at constant speed. */
+  /** Moves toward the player at speed stored in userData. */
   chase(playerPosition) {
     this._direction.copy(playerPosition).sub(this.mesh.position).normalize();
-    this.mesh.position.add(this._direction.multiplyScalar(ENEMY_SPEED));
+    this.mesh.position.add(this._direction.multiplyScalar(this.mesh.userData.speed));
   }
 
   /**
@@ -49,10 +60,12 @@ export class Enemy {
     this.health -= amount;
     this.mesh.userData.health = this.health;
 
-    if (this.health === 40) {
+    const { maxHealth } = this.mesh.userData;
+
+    if (this.health <= maxHealth * 0.8) {
       this.mesh.material.color.set(ENEMY_DAMAGED_ORANGE);
     }
-    if (this.health === 20) {
+    if (this.health <= maxHealth * 0.4) {
       this.mesh.material.color.set(ENEMY_DAMAGED_YELLOW);
     }
 
