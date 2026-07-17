@@ -1,6 +1,6 @@
 import {
-  WAVE_SPAWN_RANGE,
-  WAVE_SPAWN_OFFSET,
+  SPAWN_RANGE,
+  SPAWN_RANGE_DOUBLED,
 } from '../constants.js';
 
 /**
@@ -29,8 +29,8 @@ export class WaveManager {
     this.enemiesKilledThisWave = 0;
 
     for (let i = 0; i < this.wave + 2; i++) {
-      const x = Math.random() * WAVE_SPAWN_RANGE - WAVE_SPAWN_OFFSET;
-      const z = Math.random() * WAVE_SPAWN_RANGE - WAVE_SPAWN_OFFSET;
+      const x = Math.random() * SPAWN_RANGE_DOUBLED - SPAWN_RANGE;
+      const z = Math.random() * SPAWN_RANGE_DOUBLED - SPAWN_RANGE;
       this.enemyManager.spawn(x, z);
     }
   }

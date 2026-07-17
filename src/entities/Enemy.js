@@ -1,44 +1,63 @@
 import * as THREE from 'three';
 import {
-  ENEMY_HEALTH,
-  ENEMY_SPEED,
   ENEMY_MELEE_RANGE,
   ENEMY_MELEE_DAMAGE,
-  ENEMY_COLOR,
   ENEMY_DAMAGED_ORANGE,
   ENEMY_DAMAGED_YELLOW,
   BULLET_DAMAGE,
   PLAYER_Y,
+  ENEMY_TYPES,
+  ARENA_HALF,
 } from '../constants.js';
 
 /** Shared geometry/material — cloned per enemy to preserve independent color changes. */
 const ENEMY_GEOMETRY = new THREE.BoxGeometry(1, 1, 1);
-const ENEMY_MATERIAL = new THREE.MeshStandardMaterial({ color: ENEMY_COLOR });
 
 /**
  * Single enemy entity with health, chase movement, and melee range check.
+ * Each enemy has a type with associated stats (health, speed, damage).
  */
 export class Enemy {
   /**
    * @param {THREE.Scene} scene
    * @param {number} x
    * @param {number} z
+   * @param {string} type - 'normal' | 'fast' | 'tank'
    */
-  constructor(scene, x, z) {
-    this.mesh = new THREE.Mesh(ENEMY_GEOMETRY, ENEMY_MATERIAL.clone());
+  constructor(scene, x, z, type = 'normal') {
+    const typeStats = ENEMY_TYPES[type] || ENEMY_TYPES.normal;
+    const material = new THREE.MeshStandardMaterial({ color: typeStats.color });
+
+    this.mesh = new THREE.Mesh(ENEMY_GEOMETRY, material);
     this.mesh.position.set(x, PLAYER_Y, z);
-    this.health = ENEMY_HEALTH;
-    this.mesh.userData = { health: this.health };
+
+    // Store all stats in userData for easy access and modification
+    this.mesh.userData = {
+      type,
+      health: typeStats.health,
+      maxHealth: typeStats.health,
+      speed: typeStats.speed,
+      damage: typeStats.damage,
+    };
+
     scene.add(this.mesh);
 
     /** Reused for chase direction — avoids allocating each frame. */
     this._direction = new THREE.Vector3();
   }
 
-  /** Moves toward the player at constant speed. */
+  /** Moves toward the player using speed from userData, clamped to arena bounds. */
   chase(playerPosition) {
     this._direction.copy(playerPosition).sub(this.mesh.position).normalize();
-    this.mesh.position.add(this._direction.multiplyScalar(ENEMY_SPEED));
+    this.mesh.position.add(
+      this._direction.multiplyScalar(this.mesh.userData.speed)
+    );
+
+    // Clamp position to arena bounds
+    const max = ARENA_HALF - 1;
+    const min = -ARENA_HALF + 1;
+    this.mesh.position.x = Math.max(min, Math.min(max, this.mesh.position.x));
+    this.mesh.position.z = Math.max(min, Math.min(max, this.mesh.position.z));
   }
 
   /**
@@ -46,17 +65,16 @@ export class Enemy {
    * @returns {boolean} true if the enemy died this hit
    */
   takeDamage(amount = BULLET_DAMAGE) {
-    this.health -= amount;
-    this.mesh.userData.health = this.health;
+    this.mesh.userData.health -= amount;
 
-    if (this.health === 40) {
+    if (this.mesh.userData.health === 40) {
       this.mesh.material.color.set(ENEMY_DAMAGED_ORANGE);
     }
-    if (this.health === 20) {
+    if (this.mesh.userData.health === 20) {
       this.mesh.material.color.set(ENEMY_DAMAGED_YELLOW);
     }
 
-    return this.health <= 0;
+    return this.mesh.userData.health <= 0;
   }
 
   /** Returns melee damage to apply to the player when in range, else 0. */

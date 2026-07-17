@@ -9,6 +9,7 @@ import {
   PLAYER_BODY_COLOR,
   PLAYER_HEAD_COLOR,
   PLAYER_WHEEL_COLOR,
+  ARENA_HALF,
 } from '../constants.js';
 
 /**
@@ -60,6 +61,7 @@ export class Player {
 
   /**
    * Applies tank controls: A/D rotate, W/S move relative to facing.
+   * Clamps position to stay within arena bounds.
    * @param {import('../systems/InputSystem.js').InputSystem} input
    */
   update(input) {
@@ -80,6 +82,12 @@ export class Player {
       this.mesh.position.x += Math.sin(rotationY) * PLAYER_SPEED;
       this.mesh.position.z += Math.cos(rotationY) * PLAYER_SPEED;
     }
+
+    // Clamp position to arena bounds with 1 unit safety margin
+    const max = ARENA_HALF - 1;
+    const min = -ARENA_HALF + 1;
+    this.mesh.position.x = Math.max(min, Math.min(max, this.mesh.position.x));
+    this.mesh.position.z = Math.max(min, Math.min(max, this.mesh.position.z));
   }
 
   /** World position where player bullets spawn. */

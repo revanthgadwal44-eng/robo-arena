@@ -5,6 +5,7 @@ import {
   ENEMY_SHOOT_INTERVAL,
   ENEMY_BULLET_COLOR,
   BULLET_RADIUS,
+  ENEMY_SPAWN_WEIGHTS,
 } from '../constants.js';
 
 /** Shared bullet geometry/material for enemy shots — mesh is still created per shot. */
@@ -23,11 +24,39 @@ export class EnemyManager {
     this._shootIntervalId = null;
   }
 
-  /** Spawns an enemy at world coordinates. */
-  spawn(x, z) {
-    const enemy = new Enemy(this.scene, x, z);
+  /**
+   * Spawns an enemy at world coordinates with a specific type.
+   * @param {number} x
+   * @param {number} z
+   * @param {string} type - 'normal' | 'fast' | 'tank' (optional, defaults to weighted random)
+   */
+  spawn(x, z, type = null) {
+    // If no type specified, use weighted random selection
+    if (!type) {
+      type = this._selectRandomEnemyType();
+    }
+    const enemy = new Enemy(this.scene, x, z, type);
     this.enemies.push(enemy);
     return enemy;
+  }
+
+  /**
+   * Selects a random enemy type based on spawn weights.
+   * @returns {string} 'normal' | 'fast' | 'tank'
+   */
+  _selectRandomEnemyType() {
+    const rand = Math.random();
+    let cumulative = 0;
+
+    for (const [type, weight] of Object.entries(ENEMY_SPAWN_WEIGHTS)) {
+      cumulative += weight;
+      if (rand < cumulative) {
+        return type;
+      }
+    }
+
+    // Fallback to normal (shouldn't happen with proper weights)
+    return 'normal';
   }
 
   /** Initial wave setup — three fixed spawn positions from original game. */
@@ -49,6 +78,8 @@ export class EnemyManager {
     for (const enemy of this.enemies) {
       const bulletMesh = new THREE.Mesh(ENEMY_BULLET_GEOMETRY, ENEMY_BULLET_MATERIAL);
       bulletMesh.position.copy(enemy.mesh.position);
+      // Store damage from enemy's userData so BulletManager can access it
+      bulletMesh.userData.damage = enemy.mesh.userData.damage;
       this.scene.add(bulletMesh);
 
       const direction = playerPosition.clone().sub(enemy.mesh.position).normalize();

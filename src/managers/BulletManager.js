@@ -4,10 +4,10 @@ import {
   BULLET_RADIUS,
   BULLET_SPEED,
   ENEMY_BULLET_SPEED,
-  BULLET_CLEANUP_DISTANCE,
   ENEMY_BULLET_DAMAGE,
   ENEMY_COLLISION_RADIUS,
   PLAYER_BULLET_COLOR,
+  ARENA_HALF,
 } from '../constants.js';
 
 /** Shared geometry/material for player shots. */
@@ -45,6 +45,7 @@ export class BulletManager {
 
   /**
    * Moves player bullets and resolves enemy hits.
+   * Cleans up bullets that leave the arena bounds.
    * @returns {number} kill count from this frame
    */
   updatePlayerBullets(enemies, onEnemyKilled) {
@@ -76,7 +77,7 @@ export class BulletManager {
         }
       }
 
-      if (!removed && bullet.mesh.position.length() > BULLET_CLEANUP_DISTANCE) {
+      if (!removed && this._isOutsideArena(bullet.mesh.position)) {
         this._removePlayerBullet(i);
       }
     }
@@ -85,7 +86,8 @@ export class BulletManager {
   }
 
   /**
-   * Moves enemy bullets, applies player hits, and cleans up out-of-range shots.
+   * Moves enemy bullets, applies player hits, and cleans up out-of-arena shots.
+   * Uses damage from bullet.mesh.userData (set by EnemyManager).
    * @returns {number} damage dealt to player this frame
    */
   updateEnemyBullets(playerPosition) {
@@ -101,17 +103,25 @@ export class BulletManager {
       const distance = bullet.mesh.position.distanceTo(playerPosition);
 
       if (distance < ENEMY_COLLISION_RADIUS) {
-        damage += ENEMY_BULLET_DAMAGE;
+        // Use damage from enemy's userData (stored in bulletMesh.userData),
+        // fall back to ENEMY_BULLET_DAMAGE if not set
+        const bulletDamage = bullet.mesh.userData.damage ?? ENEMY_BULLET_DAMAGE;
+        damage += bulletDamage;
         this._removeEnemyBullet(i);
         continue;
       }
 
-      if (bullet.mesh.position.length() > BULLET_CLEANUP_DISTANCE) {
+      if (this._isOutsideArena(bullet.mesh.position)) {
         this._removeEnemyBullet(i);
       }
     }
 
     return damage;
+  }
+
+  /** Checks if position is outside arena bounds. */
+  _isOutsideArena(position) {
+    return Math.abs(position.x) > ARENA_HALF || Math.abs(position.z) > ARENA_HALF;
   }
 
   _removePlayerBullet(index) {

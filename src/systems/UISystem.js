@@ -1,5 +1,5 @@
 /**
- * HUD overlay — health, kills, and current wave.
+ * HUD overlay — health, kills, current wave, and enemies remaining.
  */
 export class UISystem {
   constructor() {
@@ -16,14 +16,17 @@ export class UISystem {
    * @param {number} health
    * @param {number} kills
    * @param {number} wave
+   * @param {number} enemiesRemaining
    */
-  update(health, kills, wave) {
+  update(health, kills, wave, enemiesRemaining) {
     this.element.innerHTML = `
 Health : ${Math.floor(health)}
 <br>
 Kills : ${kills}
 <br>
 Wave : ${wave}
+<br>
+Enemies Remaining : ${enemiesRemaining}
 `;
   }
 }

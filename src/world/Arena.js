@@ -3,6 +3,7 @@ import {
   ARENA_SIZE,
   ARENA_HALF,
   WALL_HEIGHT,
+  WALL_THICKNESS,
   FLOOR_COLOR,
   WALL_COLOR,
 } from '../constants.js';
@@ -26,10 +27,10 @@ export class Arena {
     floor.rotation.x = -Math.PI / 2;
     scene.add(floor);
 
-    this._createWall(scene, 0, -this.half, this.size, 1);
-    this._createWall(scene, 0, this.half, this.size, 1);
-    this._createWall(scene, -this.half, 0, 1, this.size);
-    this._createWall(scene, this.half, 0, 1, this.size);
+    this._createWall(scene, 0, -this.half, this.size, WALL_THICKNESS);
+    this._createWall(scene, 0, this.half, this.size, WALL_THICKNESS);
+    this._createWall(scene, -this.half, 0, WALL_THICKNESS, this.size);
+    this._createWall(scene, this.half, 0, WALL_THICKNESS, this.size);
   }
 
   _createWall(scene, x, z, width, depth) {

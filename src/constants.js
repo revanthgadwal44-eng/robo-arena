@@ -25,7 +25,6 @@ export const PLAYER_WHEEL_COLOR = 0x000000;
 export const BULLET_RADIUS = 0.15;
 export const BULLET_SPEED = 0.3;
 export const ENEMY_BULLET_SPEED = 0.1;
-export const BULLET_CLEANUP_DISTANCE = 50;
 export const BULLET_DAMAGE = 10;
 export const ENEMY_BULLET_DAMAGE = 10;
 export const PLAYER_BULLET_COLOR = 0xffff00;
@@ -41,14 +40,47 @@ export const ENEMY_COLOR = 0xff0000;
 export const ENEMY_DAMAGED_ORANGE = 0xff8800;
 export const ENEMY_DAMAGED_YELLOW = 0xffff00;
 
-export const ARENA_SIZE = 20;
-export const ARENA_HALF = 10;
+/** Enemy type stats — type, health, speed, damage, color */
+export const ENEMY_TYPES = {
+  normal: {
+    health: 50,
+    speed: 0.02,
+    damage: 10,
+    color: 0xff0000,
+  },
+  fast: {
+    health: 30,
+    speed: 0.04,
+    damage: 8,
+    color: 0xff6600,
+  },
+  tank: {
+    health: 100,
+    speed: 0.01,
+    damage: 15,
+    color: 0x990000,
+  },
+};
+
+/** Weighted spawn probabilities — must sum to 1.0 */
+export const ENEMY_SPAWN_WEIGHTS = {
+  normal: 0.7,
+  fast: 0.2,
+  tank: 0.1,
+};
+
+/** Arena geometry — 80x80 scalable arena */
+export const ARENA_SIZE = 80;
+export const ARENA_HALF = ARENA_SIZE / 2;
 export const WALL_HEIGHT = 2;
+export const WALL_THICKNESS = 1;
+export const SPAWN_PADDING = 5;
 export const FLOOR_COLOR = 0x808080;
 export const WALL_COLOR = 0x555555;
 
-export const WAVE_SPAWN_RANGE = 16;
-export const WAVE_SPAWN_OFFSET = 8;
+/** Spawn range ensures enemies always spawn safely inside walls */
+export const SPAWN_RANGE = ARENA_HALF - SPAWN_PADDING;
+export const SPAWN_RANGE_DOUBLED = SPAWN_RANGE * 2;
 
 export const AMBIENT_LIGHT_COLOR = 0xffffff;
 export const AMBIENT_LIGHT_INTENSITY = 1;
