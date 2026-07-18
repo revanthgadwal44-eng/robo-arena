@@ -76,14 +76,28 @@ export const ENEMY_SPAWN_WEIGHTS = [
   { type: ENEMY_TYPES.TANK, weight: 0.1 },
 ];
 
-export const ARENA_SIZE = 20;
-export const ARENA_HALF = 10;
+// =======================
+// Arena Configuration
+// =======================
+
+export const ARENA_SIZE = 80;
+
+export const ARENA_HALF = ARENA_SIZE / 2;
+
 export const WALL_HEIGHT = 2;
+
+export const WALL_THICKNESS = 1;
+
 export const FLOOR_COLOR = 0x808080;
+
 export const WALL_COLOR = 0x555555;
 
-export const WAVE_SPAWN_RANGE = 16;
-export const WAVE_SPAWN_OFFSET = 8;
+// Enemy spawn settings
+
+export const SPAWN_PADDING = 5;
+
+export const SPAWN_RANGE =
+    ARENA_HALF - SPAWN_PADDING;
 
 export const AMBIENT_LIGHT_COLOR = 0xffffff;
 export const AMBIENT_LIGHT_INTENSITY = 1;
