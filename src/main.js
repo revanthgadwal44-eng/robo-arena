@@ -61,6 +61,7 @@ const bulletManager = new BulletManager(scene);
 const waveManager = new WaveManager(enemyManager);
 
 let kills = 0;
+let lastFrameTime = performance.now();
 
 enemyManager.spawnInitialEnemies();
 
@@ -74,8 +75,11 @@ enemyManager.startShooting(
 );
 
 // --- Game loop (update order preserved from original main.js) ---
-function animate() {
+function animate(time) {
   requestAnimationFrame(animate);
+
+  const delta = Math.min((time - lastFrameTime) / 1000, 0.1);
+  lastFrameTime = time;
 
   player.update(input);
 
@@ -91,13 +95,15 @@ function animate() {
   cameraSystem.update(player.mesh.position, player.mesh.rotation.y);
   renderer.render(scene, camera);
 
-  ui.update(player.health, kills, waveManager.wave, enemyManager.count);
+  ui.update(player.health, kills, waveManager.wave, enemyManager.count, delta > 0 ? 1 / delta : 0);
 
-  const meleeDamage = enemyManager.update(player.mesh.position);
+  const meleeDamage = enemyManager.update(player.mesh.position, camera);
   player.health -= meleeDamage;
 
   const bulletDamage = bulletManager.updateEnemyBullets(player.mesh.position);
   player.health -= bulletDamage;
+
+  bulletManager.updateEffects(delta);
 
   if (player.health <= 0) {
     player.respawn();

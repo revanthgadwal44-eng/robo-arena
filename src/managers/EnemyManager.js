@@ -6,6 +6,8 @@ import {
   ENEMY_SHOOT_INTERVAL,
   ENEMY_BULLET_COLOR,
   BULLET_RADIUS,
+  ENEMY_CHASE_STOP_DISTANCE,
+  ENEMY_MELEE_RANGE,
 } from '../constants.js';
 
 /** Shared bullet geometry/material for enemy shots — mesh is still created per shot. */
@@ -71,6 +73,11 @@ export class EnemyManager {
   /** @param {THREE.Vector3} playerPosition */
   _enemyShoot(playerPosition, onEnemyShoot) {
     for (const enemy of this.enemies) {
+      const distance = enemy.mesh.position.distanceTo(playerPosition);
+      if (distance > ENEMY_CHASE_STOP_DISTANCE) {
+        continue;
+      }
+
       const bulletMesh = new THREE.Mesh(ENEMY_BULLET_GEOMETRY, ENEMY_BULLET_MATERIAL);
       bulletMesh.position.copy(enemy.mesh.position);
       this.scene.add(bulletMesh);
@@ -82,10 +89,18 @@ export class EnemyManager {
   }
 
   /** Updates chase AI and returns total melee damage against the player. */
-  update(playerPosition) {
+  update(playerPosition, camera) {
     let meleeDamage = 0;
     for (const enemy of this.enemies) {
-      enemy.chase(playerPosition);
+      const distance = enemy.mesh.position.distanceTo(playerPosition);
+      const isTooClose = distance <= ENEMY_MELEE_RANGE;
+      const shouldChase = distance > ENEMY_CHASE_STOP_DISTANCE || isTooClose;
+
+      if (shouldChase) {
+        enemy.chase(playerPosition);
+      }
+
+      enemy.updateHealthBar(camera);
       meleeDamage += enemy.getMeleeDamage(playerPosition);
     }
     return meleeDamage;

@@ -8,11 +8,22 @@ import {
   ENEMY_BULLET_DAMAGE,
   ENEMY_COLLISION_RADIUS,
   PLAYER_BULLET_COLOR,
+  MUZZLE_FLASH_COLOR,
+  MUZZLE_FLASH_DURATION,
+  MUZZLE_FLASH_RADIUS,
+  HIT_PARTICLE_COLOR,
+  HIT_PARTICLE_COUNT,
+  HIT_PARTICLE_LIFETIME,
+  HIT_PARTICLE_SPEED,
 } from '../constants.js';
 
 /** Shared geometry/material for player shots. */
 const PLAYER_BULLET_GEOMETRY = new THREE.SphereGeometry(BULLET_RADIUS);
 const PLAYER_BULLET_MATERIAL = new THREE.MeshStandardMaterial({ color: PLAYER_BULLET_COLOR });
+const MUZZLE_FLASH_GEOMETRY = new THREE.SphereGeometry(MUZZLE_FLASH_RADIUS);
+const MUZZLE_FLASH_MATERIAL = new THREE.MeshBasicMaterial({ color: MUZZLE_FLASH_COLOR });
+const HIT_PARTICLE_GEOMETRY = new THREE.SphereGeometry(0.05);
+const HIT_PARTICLE_MATERIAL = new THREE.MeshBasicMaterial({ color: HIT_PARTICLE_COLOR, transparent: true });
 
 /**
  * Manages player and enemy bullets — creation, movement, collisions, and cleanup.
@@ -25,6 +36,8 @@ export class BulletManager {
     this.playerBullets = [];
     /** @type {Bullet[]} */
     this.enemyBullets = [];
+    this._muzzleFlashes = [];
+    this._hitParticles = [];
 
     /** Reused each frame to avoid direction.clone() during movement. */
     this._movement = new THREE.Vector3();
@@ -36,6 +49,11 @@ export class BulletManager {
     bulletMesh.position.copy(origin);
     this.scene.add(bulletMesh);
     this.playerBullets.push(new Bullet(bulletMesh, direction));
+
+    const flashMesh = new THREE.Mesh(MUZZLE_FLASH_GEOMETRY, MUZZLE_FLASH_MATERIAL);
+    flashMesh.position.copy(origin).add(direction.clone().multiplyScalar(0.8));
+    this.scene.add(flashMesh);
+    this._muzzleFlashes.push({ mesh: flashMesh, life: MUZZLE_FLASH_DURATION });
   }
 
   /** Registers an enemy bullet created by EnemyManager. */
@@ -65,6 +83,7 @@ export class BulletManager {
 
         if (distance < ENEMY_COLLISION_RADIUS) {
           const died = enemy.takeDamage();
+          this._spawnHitParticles(bullet.mesh.position);
           this._removePlayerBullet(i);
 
           if (died) {
@@ -82,6 +101,42 @@ export class BulletManager {
     }
 
     return kills;
+  }
+
+  _spawnHitParticles(position) {
+    for (let i = 0; i < HIT_PARTICLE_COUNT; i++) {
+      const particleMesh = new THREE.Mesh(HIT_PARTICLE_GEOMETRY, HIT_PARTICLE_MATERIAL.clone());
+      particleMesh.position.copy(position);
+      this.scene.add(particleMesh);
+
+      const velocity = new THREE.Vector3(
+        (Math.random() - 0.5) * HIT_PARTICLE_SPEED,
+        Math.random() * HIT_PARTICLE_SPEED,
+        (Math.random() - 0.5) * HIT_PARTICLE_SPEED
+      );
+
+      this._hitParticles.push({ mesh: particleMesh, velocity, life: HIT_PARTICLE_LIFETIME });
+    }
+  }
+
+  updateEffects(delta) {
+    for (let i = this._muzzleFlashes.length - 1; i >= 0; i--) {
+      const flash = this._muzzleFlashes[i];
+      flash.life -= delta;
+      if (flash.life <= 0) {
+        this._removeMuzzleFlash(i);
+      }
+    }
+
+    for (let i = this._hitParticles.length - 1; i >= 0; i--) {
+      const particle = this._hitParticles[i];
+      particle.life -= delta;
+      particle.mesh.position.addScaledVector(particle.velocity, delta);
+      particle.mesh.material.opacity = Math.max(particle.life / HIT_PARTICLE_LIFETIME, 0);
+      if (particle.life <= 0) {
+        this._removeHitParticle(i);
+      }
+    }
   }
 
   /**
@@ -124,5 +179,17 @@ export class BulletManager {
     const bullet = this.enemyBullets[index];
     this.scene.remove(bullet.mesh);
     this.enemyBullets.splice(index, 1);
+  }
+
+  _removeMuzzleFlash(index) {
+    const flash = this._muzzleFlashes[index];
+    this.scene.remove(flash.mesh);
+    this._muzzleFlashes.splice(index, 1);
+  }
+
+  _removeHitParticle(index) {
+    const particle = this._hitParticles[index];
+    this.scene.remove(particle.mesh);
+    this._hitParticles.splice(index, 1);
   }
 }
