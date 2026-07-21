@@ -17,6 +17,7 @@ import {
 } from './constants.js';
 import { Player } from './entities/Player.js';
 import { Arena } from './world/Arena.js';
+import { ObstacleManager } from './world/ObstacleManager.js';
 import { InputSystem } from './systems/InputSystem.js';
 import { CameraSystem } from './systems/CameraSystem.js';
 import { UISystem } from './systems/UISystem.js';
@@ -51,12 +52,13 @@ scene.add(directionalLight);
 
 // --- Systems & managers ---
 new Arena(scene);
+const obstacleManager = new ObstacleManager(scene);
 
-const player = new Player(scene);
+const player = new Player(scene, obstacleManager);
 const input = new InputSystem();
 const cameraSystem = new CameraSystem(camera);
 const ui = new UISystem();
-const enemyManager = new EnemyManager(scene);
+const enemyManager = new EnemyManager(scene, obstacleManager);
 const bulletManager = new BulletManager(scene);
 const waveManager = new WaveManager(enemyManager);
 

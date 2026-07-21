@@ -19,11 +19,14 @@ const ENEMY_BULLET_MATERIAL = new THREE.MeshStandardMaterial({ color: ENEMY_BULL
  */
 export class EnemyManager {
   /** @param {THREE.Scene} scene */
-  constructor(scene) {
+  constructor(scene, obstacleManager) {
     this.scene = scene;
+    this.obstacleManager = obstacleManager;
     /** @type {Enemy[]} */
     this.enemies = [];
     this._shootIntervalId = null;
+    this._movement = new THREE.Vector3();
+    this._testPosition = new THREE.Vector3();
   }
 
   /**
@@ -95,15 +98,49 @@ export class EnemyManager {
       const distance = enemy.mesh.position.distanceTo(playerPosition);
       const isTooClose = distance <= ENEMY_MELEE_RANGE;
       const shouldChase = distance > ENEMY_CHASE_STOP_DISTANCE || isTooClose;
-
+ 
       if (shouldChase) {
-        enemy.chase(playerPosition);
+        this._moveEnemy(enemy, playerPosition);
       }
-
+ 
       enemy.updateHealthBar(camera);
       meleeDamage += enemy.getMeleeDamage(playerPosition);
     }
     return meleeDamage;
+  }
+ 
+  _moveEnemy(enemy, targetPosition) {
+    this._movement.copy(targetPosition).sub(enemy.mesh.position);
+    this._movement.y = 0;
+    if (this._movement.lengthSq() === 0) {
+      return;
+    }
+    this._movement.normalize().multiplyScalar(enemy.mesh.userData.speed);
+ 
+    const desiredPosition = enemy.mesh.position.clone().add(this._movement);
+    if (!this._isBlocked(desiredPosition)) {
+      enemy.mesh.position.copy(desiredPosition);
+      return;
+    }
+ 
+    const originalPosition = enemy.mesh.position.clone();
+    this._testPosition.copy(originalPosition).add(new THREE.Vector3(this._movement.x, 0, 0));
+    if (!this._isBlocked(this._testPosition)) {
+      enemy.mesh.position.copy(this._testPosition);
+      return;
+    }
+ 
+    this._testPosition.copy(originalPosition).add(new THREE.Vector3(0, 0, this._movement.z));
+    if (!this._isBlocked(this._testPosition)) {
+      enemy.mesh.position.copy(this._testPosition);
+    }
+  }
+ 
+  _isBlocked(position) {
+    if (!this.obstacleManager) {
+      return false;
+    }
+    return this.obstacleManager.isCircleBlocked(position, ENEMY_COLLISION_RADIUS);
   }
 
   /** @returns {Enemy[]} */

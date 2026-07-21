@@ -14,6 +14,7 @@ export const CAMERA_LERP = 0.1;
 export const PLAYER_MAX_HEALTH = 100;
 export const PLAYER_SPEED = 0.1;
 export const PLAYER_ROTATION_SPEED = 0.03;
+export const PLAYER_COLLISION_RADIUS = 1.2;
 export const PLAYER_SHOOT_COOLDOWN = 200;
 export const PLAYER_Y = 1;
 export const PLAYER_SPAWN_X = 0;

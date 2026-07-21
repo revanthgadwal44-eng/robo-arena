@@ -6,6 +6,7 @@ import {
   PLAYER_Y,
   PLAYER_SPAWN_X,
   PLAYER_SPAWN_Z,
+  PLAYER_COLLISION_RADIUS,
   PLAYER_BODY_COLOR,
   PLAYER_HEAD_COLOR,
   PLAYER_WHEEL_COLOR,
@@ -17,14 +18,17 @@ import {
  */
 export class Player {
   /** @param {THREE.Scene} scene */
-  constructor(scene) {
+  constructor(scene, obstacleManager) {
     this.health = PLAYER_MAX_HEALTH;
     this.mesh = this._createRobot();
     this.mesh.position.y = PLAYER_Y;
     scene.add(this.mesh);
+    this.obstacleManager = obstacleManager;
+    this._collisionRadius = PLAYER_COLLISION_RADIUS;
 
     /** Reused each frame to avoid per-frame Vector3 allocation during movement. */
     this._facing = new THREE.Vector3();
+    this._movement = new THREE.Vector3();
   }
 
   /** Builds the robot as a THREE.Group with body, head, and wheels. */
@@ -71,14 +75,38 @@ export class Player {
     }
 
     const rotationY = this.mesh.rotation.y;
+    this._movement.set(0, 0, 0);
 
     if (input.isPressed('w')) {
-      this.mesh.position.x -= Math.sin(rotationY) * PLAYER_SPEED;
-      this.mesh.position.z -= Math.cos(rotationY) * PLAYER_SPEED;
+      this._movement.x -= Math.sin(rotationY) * PLAYER_SPEED;
+      this._movement.z -= Math.cos(rotationY) * PLAYER_SPEED;
     }
     if (input.isPressed('s')) {
-      this.mesh.position.x += Math.sin(rotationY) * PLAYER_SPEED;
-      this.mesh.position.z += Math.cos(rotationY) * PLAYER_SPEED;
+      this._movement.x += Math.sin(rotationY) * PLAYER_SPEED;
+      this._movement.z += Math.cos(rotationY) * PLAYER_SPEED;
+    }
+
+    if (this._movement.lengthSq() > 0) {
+      this._moveWithCollision(this._movement);
+    }
+  }
+
+  _moveWithCollision(delta) {
+    const initialPosition = this.mesh.position.clone();
+    this.mesh.position.add(delta);
+
+    if (this.obstacleManager && this.obstacleManager.isCircleBlocked(this.mesh.position, this._collisionRadius)) {
+      this.mesh.position.copy(initialPosition);
+
+      this.mesh.position.x += delta.x;
+      if (this.obstacleManager.isCircleBlocked(this.mesh.position, this._collisionRadius)) {
+        this.mesh.position.x = initialPosition.x;
+      }
+
+      this.mesh.position.z += delta.z;
+      if (this.obstacleManager.isCircleBlocked(this.mesh.position, this._collisionRadius)) {
+        this.mesh.position.z = initialPosition.z;
+      }
     }
   }
 
