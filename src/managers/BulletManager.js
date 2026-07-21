@@ -29,9 +29,12 @@ const HIT_PARTICLE_MATERIAL = new THREE.MeshBasicMaterial({ color: HIT_PARTICLE_
  * Manages player and enemy bullets — creation, movement, collisions, and cleanup.
  */
 export class BulletManager {
-  /** @param {THREE.Scene} scene */
-  constructor(scene) {
+  /** @param {THREE.Scene} scene
+   *  @param {import('./ObstacleManager.js').ObstacleManager} obstacleManager
+   */
+  constructor(scene, obstacleManager) {
     this.scene = scene;
+    this.obstacleManager = obstacleManager;
     /** @type {Bullet[]} */
     this.playerBullets = [];
     /** @type {Bullet[]} */
@@ -50,7 +53,10 @@ export class BulletManager {
     this.scene.add(bulletMesh);
     this.playerBullets.push(new Bullet(bulletMesh, direction));
 
-    const flashMesh = new THREE.Mesh(MUZZLE_FLASH_GEOMETRY, MUZZLE_FLASH_MATERIAL);
+    const flashMaterial = MUZZLE_FLASH_MATERIAL.clone();
+    flashMaterial.transparent = true;
+    flashMaterial.opacity = 1;
+    const flashMesh = new THREE.Mesh(MUZZLE_FLASH_GEOMETRY, flashMaterial);
     flashMesh.position.copy(origin).add(direction.clone().multiplyScalar(0.8));
     this.scene.add(flashMesh);
     this._muzzleFlashes.push({ mesh: flashMesh, life: MUZZLE_FLASH_DURATION });
@@ -67,25 +73,40 @@ export class BulletManager {
    */
   updatePlayerBullets(enemies, onEnemyKilled) {
     let kills = 0;
-
+ 
     for (const bullet of this.playerBullets) {
       this._movement.copy(bullet.direction).multiplyScalar(BULLET_SPEED);
       bullet.mesh.position.add(this._movement);
     }
-
+ 
     for (let i = this.playerBullets.length - 1; i >= 0; i--) {
       const bullet = this.playerBullets[i];
       let removed = false;
 
+      if (this.obstacleManager) {
+        const obstacle = this.obstacleManager.checkBulletCollision(bullet.mesh.position, BULLET_RADIUS);
+        if (obstacle) {
+          obstacle.hit(bullet.damage);
+          this._spawnHitParticles(bullet.mesh.position);
+          this._removePlayerBullet(i);
+          continue;
+        }
+
+        if (!this.obstacleManager.isWithinArena(bullet.mesh.position, BULLET_RADIUS)) {
+          this._removePlayerBullet(i);
+          continue;
+        }
+      }
+ 
       for (let j = enemies.length - 1; j >= 0; j--) {
         const enemy = enemies[j];
         const distance = bullet.mesh.position.distanceTo(enemy.mesh.position);
-
+ 
         if (distance < ENEMY_COLLISION_RADIUS) {
           const died = enemy.takeDamage();
           this._spawnHitParticles(bullet.mesh.position);
           this._removePlayerBullet(i);
-
+ 
           if (died) {
             kills++;
             onEnemyKilled(enemy);
@@ -94,12 +115,12 @@ export class BulletManager {
           break;
         }
       }
-
+ 
       if (!removed && bullet.mesh.position.length() > BULLET_CLEANUP_DISTANCE) {
         this._removePlayerBullet(i);
       }
     }
-
+ 
     return kills;
   }
 
@@ -125,7 +146,10 @@ export class BulletManager {
       flash.life -= delta;
       if (flash.life <= 0) {
         this._removeMuzzleFlash(i);
+        continue;
       }
+      const opacity = Math.max(flash.life / MUZZLE_FLASH_DURATION, 0);
+      flash.mesh.material.opacity = opacity;
     }
 
     for (let i = this._hitParticles.length - 1; i >= 0; i--) {
@@ -145,27 +169,43 @@ export class BulletManager {
    */
   updateEnemyBullets(playerPosition) {
     let damage = 0;
-
+ 
     for (const bullet of this.enemyBullets) {
       this._movement.copy(bullet.direction).multiplyScalar(ENEMY_BULLET_SPEED);
       bullet.mesh.position.add(this._movement);
     }
-
+ 
     for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
       const bullet = this.enemyBullets[i];
-      const distance = bullet.mesh.position.distanceTo(playerPosition);
 
+      if (this.obstacleManager) {
+        const obstacle = this.obstacleManager.checkBulletCollision(bullet.mesh.position, BULLET_RADIUS);
+        if (obstacle) {
+          obstacle.hit(bullet.damage);
+          this._spawnHitParticles(bullet.mesh.position);
+          this._removeEnemyBullet(i);
+          continue;
+        }
+
+        if (!this.obstacleManager.isWithinArena(bullet.mesh.position, BULLET_RADIUS)) {
+          this._removeEnemyBullet(i);
+          continue;
+        }
+      }
+ 
+      const distance = bullet.mesh.position.distanceTo(playerPosition);
+ 
       if (distance < ENEMY_COLLISION_RADIUS) {
         damage += bullet.damage ?? ENEMY_BULLET_DAMAGE;
         this._removeEnemyBullet(i);
         continue;
       }
-
-      if (bullet.mesh.position.length() > BULLET_CLEANUP_DISTANCE) {
+ 
+      if (!removed && bullet.mesh.position.length() > BULLET_CLEANUP_DISTANCE) {
         this._removeEnemyBullet(i);
       }
     }
-
+ 
     return damage;
   }
 
@@ -184,12 +224,18 @@ export class BulletManager {
   _removeMuzzleFlash(index) {
     const flash = this._muzzleFlashes[index];
     this.scene.remove(flash.mesh);
+    if (flash.mesh.material) {
+      flash.mesh.material.dispose();
+    }
     this._muzzleFlashes.splice(index, 1);
   }
 
   _removeHitParticle(index) {
     const particle = this._hitParticles[index];
     this.scene.remove(particle.mesh);
+    if (particle.mesh.material) {
+      particle.mesh.material.dispose();
+    }
     this._hitParticles.splice(index, 1);
   }
 }

@@ -8,6 +8,7 @@ import {
   BULLET_RADIUS,
   ENEMY_CHASE_STOP_DISTANCE,
   ENEMY_MELEE_RANGE,
+  ENEMY_COLLISION_RADIUS,
 } from '../constants.js';
 
 /** Shared bullet geometry/material for enemy shots — mesh is still created per shot. */
@@ -96,13 +97,12 @@ export class EnemyManager {
     let meleeDamage = 0;
     for (const enemy of this.enemies) {
       const distance = enemy.mesh.position.distanceTo(playerPosition);
-      const isTooClose = distance <= ENEMY_MELEE_RANGE;
-      const shouldChase = distance > ENEMY_CHASE_STOP_DISTANCE || isTooClose;
- 
+      const shouldChase = distance > ENEMY_MELEE_RANGE;
+
       if (shouldChase) {
         this._moveEnemy(enemy, playerPosition);
       }
- 
+
       enemy.updateHealthBar(camera);
       meleeDamage += enemy.getMeleeDamage(playerPosition);
     }
@@ -116,21 +116,38 @@ export class EnemyManager {
       return;
     }
     this._movement.normalize().multiplyScalar(enemy.mesh.userData.speed);
- 
+
     const desiredPosition = enemy.mesh.position.clone().add(this._movement);
     if (!this._isBlocked(desiredPosition)) {
       enemy.mesh.position.copy(desiredPosition);
       return;
     }
- 
+
     const originalPosition = enemy.mesh.position.clone();
-    this._testPosition.copy(originalPosition).add(new THREE.Vector3(this._movement.x, 0, 0));
+    const axisX = new THREE.Vector3(this._movement.x, 0, 0);
+    const axisZ = new THREE.Vector3(0, 0, this._movement.z);
+
+    this._testPosition.copy(originalPosition).add(axisX);
     if (!this._isBlocked(this._testPosition)) {
       enemy.mesh.position.copy(this._testPosition);
       return;
     }
- 
-    this._testPosition.copy(originalPosition).add(new THREE.Vector3(0, 0, this._movement.z));
+
+    this._testPosition.copy(originalPosition).add(axisZ);
+    if (!this._isBlocked(this._testPosition)) {
+      enemy.mesh.position.copy(this._testPosition);
+      return;
+    }
+
+    const perpendicularA = new THREE.Vector3(-this._movement.z, 0, this._movement.x).normalize().multiplyScalar(enemy.mesh.userData.speed);
+    this._testPosition.copy(originalPosition).add(perpendicularA);
+    if (!this._isBlocked(this._testPosition)) {
+      enemy.mesh.position.copy(this._testPosition);
+      return;
+    }
+
+    const perpendicularB = new THREE.Vector3(this._movement.z, 0, -this._movement.x).normalize().multiplyScalar(enemy.mesh.userData.speed);
+    this._testPosition.copy(originalPosition).add(perpendicularB);
     if (!this._isBlocked(this._testPosition)) {
       enemy.mesh.position.copy(this._testPosition);
     }

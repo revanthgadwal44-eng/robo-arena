@@ -34,7 +34,7 @@ export const PLAYER_BULLET_COLOR = 0xffff00;
 export const ENEMY_BULLET_COLOR = 0xff0000;
 export const MUZZLE_FLASH_COLOR = 0xffff99;
 export const MUZZLE_FLASH_RADIUS = 0.25;
-export const MUZZLE_FLASH_DURATION = 0.08;
+export const MUZZLE_FLASH_DURATION = 0.25;
 export const HIT_PARTICLE_COLOR = 0xffdd66;
 export const HIT_PARTICLE_COUNT = 8;
 export const HIT_PARTICLE_LIFETIME = 0.25;
@@ -94,7 +94,7 @@ export const ARENA_SIZE = 80;
 
 export const ARENA_HALF = ARENA_SIZE / 2;
 
-export const WALL_HEIGHT = 2;
+export const WALL_HEIGHT = 6;
 
 export const WALL_THICKNESS = 1;
 

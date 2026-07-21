@@ -59,7 +59,7 @@ const input = new InputSystem();
 const cameraSystem = new CameraSystem(camera);
 const ui = new UISystem();
 const enemyManager = new EnemyManager(scene, obstacleManager);
-const bulletManager = new BulletManager(scene);
+const bulletManager = new BulletManager(scene, obstacleManager);
 const waveManager = new WaveManager(enemyManager);
 
 let kills = 0;

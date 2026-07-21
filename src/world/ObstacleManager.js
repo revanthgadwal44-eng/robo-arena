@@ -78,6 +78,21 @@ export class ObstacleManager {
     return null;
   }
 
+  /**
+   * Returns the first obstacle intersecting a 3D sphere, or null if none.
+   * @param {{x:number,y:number,z:number}} position
+   * @param {number} radius
+   * @returns {Obstacle|null}
+   */
+  checkBulletCollision(position, radius) {
+    for (const obstacle of this.obstacles) {
+      if (this._isSphereIntersectingBox(position, radius, obstacle.boundingBox)) {
+        return obstacle;
+      }
+    }
+    return null;
+  }
+
   _pickRandomType() {
     const index = Math.floor(Math.random() * OBSTACLE_TYPE_LIST.length);
     return OBSTACLE_TYPE_LIST[index];
@@ -90,7 +105,7 @@ export class ObstacleManager {
       case OBSTACLE_TYPES.CONCRETE_BARRIER:
         return new THREE.Vector3(4, 2, 1);
       case OBSTACLE_TYPES.METAL_PILLAR:
-        return new THREE.Vector3(1.6, 3, 1.6);
+        return new THREE.Vector3(2.4, 11, 2.4);
       case OBSTACLE_TYPES.ROCK:
         return new THREE.Vector3(3, 1.5, 2.5);
       default:
@@ -169,6 +184,10 @@ export class ObstacleManager {
     const dx = position.x - x;
     const dz = position.z - z;
     return dx * dx + dz * dz < radius * radius;
+  }
+
+  _isSphereIntersectingBox(position, radius, box) {
+    return box.distanceToPoint(position) <= radius;
   }
 
   _randomBetween(min, max) {

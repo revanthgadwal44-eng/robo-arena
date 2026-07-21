@@ -31,9 +31,9 @@ const OBSTACLE_DEFINITIONS = {
     ),
   },
   [OBSTACLE_TYPES.METAL_PILLAR]: {
-    size: new THREE.Vector3(1.6, 3, 1.6),
+    size: new THREE.Vector3(2.4, 11, 2.4),
     createMesh: () => new THREE.Mesh(
-      new THREE.CylinderGeometry(0.8, 0.8, 3, 16),
+      new THREE.CylinderGeometry(1.2, 1.2, 11, 16),
       new THREE.MeshStandardMaterial({
         color: 0xb0c4de,
         roughness: 0.4,
@@ -79,6 +79,17 @@ export class Obstacle {
     scene.add(this.mesh);
     this.boundingBox = new THREE.Box3();
     this.updateBoundingBox();
+  }
+
+  /**
+   * Applies bullet damage to the obstacle.
+   * For now, obstacles are indestructible and simply absorb bullets.
+   * Future destructible obstacles can override this behavior.
+   * @param {number} damage
+   * @returns {boolean} true if the obstacle was destroyed
+   */
+  hit(damage) {
+    return false;
   }
 
   updateBoundingBox() {
