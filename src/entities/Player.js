@@ -7,6 +7,9 @@ import {
   PLAYER_SPAWN_X,
   PLAYER_SPAWN_Z,
   PLAYER_COLLISION_RADIUS,
+  PLAYER_DASH_COOLDOWN_SECONDS,
+  PLAYER_DASH_DURATION_SECONDS,
+  PLAYER_DASH_SPEED,
   PLAYER_BODY_COLOR,
   PLAYER_HEAD_COLOR,
   PLAYER_WHEEL_COLOR,
@@ -20,6 +23,7 @@ export class Player {
   /** @param {THREE.Scene} scene */
   constructor(scene, obstacleManager) {
     this.health = PLAYER_MAX_HEALTH;
+    this.maxHealth = PLAYER_MAX_HEALTH;
     this.mesh = this._createRobot();
     this.mesh.position.y = PLAYER_Y;
     scene.add(this.mesh);
@@ -29,6 +33,10 @@ export class Player {
     /** Reused each frame to avoid per-frame Vector3 allocation during movement. */
     this._facing = new THREE.Vector3();
     this._movement = new THREE.Vector3();
+    this._dashMovement = new THREE.Vector3();
+    this._dashRemainingSeconds = 0;
+    this._dashCooldownUntilMs = 0;
+    this._damageMultiplier = 1;
   }
 
   /** Builds the robot as a THREE.Group with body, head, and wheels. */
@@ -66,7 +74,13 @@ export class Player {
    * Applies tank controls: A/D rotate, W/S move relative to facing.
    * @param {import('../systems/InputSystem.js').InputSystem} input
    */
-  update(input) {
+  update(input, delta) {
+    const now = performance.now();
+    if (input.consumeDashPressed() && now >= this._dashCooldownUntilMs) {
+      this._dashRemainingSeconds = PLAYER_DASH_DURATION_SECONDS;
+      this._dashCooldownUntilMs = now + PLAYER_DASH_COOLDOWN_SECONDS * 1000;
+    }
+
     if (input.isPressed('a')) {
       this.mesh.rotation.y += PLAYER_ROTATION_SPEED;
     }
@@ -88,6 +102,12 @@ export class Player {
 
     if (this._movement.lengthSq() > 0) {
       this._moveWithCollision(this._movement);
+    }
+
+    if (this._dashRemainingSeconds > 0) {
+      this._dashMovement.copy(this.getShootDirection()).multiplyScalar(PLAYER_DASH_SPEED * delta);
+      this._moveWithCollision(this._dashMovement);
+      this._dashRemainingSeconds = Math.max(0, this._dashRemainingSeconds - delta);
     }
   }
 
@@ -127,9 +147,21 @@ export class Player {
     return this._facing.clone();
   }
 
+  heal(amount) {
+    this.health = Math.min(this.maxHealth, this.health + amount);
+  }
+
+  setDamageMultiplier(multiplier) {
+    this._damageMultiplier = multiplier;
+  }
+
+  applyDamage(amount) {
+    this.health -= amount * this._damageMultiplier;
+  }
+
   /** Resets health and position after death — matches original behavior. */
   respawn() {
-    this.health = PLAYER_MAX_HEALTH;
+    this.health = this.maxHealth;
     this.mesh.position.set(PLAYER_SPAWN_X, PLAYER_Y, PLAYER_SPAWN_Z);
   }
 }

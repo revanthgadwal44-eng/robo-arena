@@ -37,8 +37,15 @@ export class UISystem {
    * @param {number} wave
    * @param {number} enemiesRemaining
    * @param {number} fps
+   * @param {{name: string, remaining: number}[]} activePowerUps
    */
-  update(health, kills, wave, enemiesRemaining, fps) {
+  update(health, kills, wave, enemiesRemaining, fps, activePowerUps) {
+    const powerUpsHtml = activePowerUps.length === 0
+      ? 'Power-ups : None'
+      : `Power-ups : ${activePowerUps
+        .map((powerUp) => `${powerUp.name} (${powerUp.remaining.toFixed(1)}s)`)
+        .join(', ')}`;
+
     this.element.innerHTML = `
 Health : ${Math.max(0, Math.floor(health))}
 <br>
@@ -49,6 +56,8 @@ Wave : ${wave}
 Enemies Remaining : ${enemiesRemaining}
 <br>
 FPS : ${Math.round(fps)}
+<br>
+${powerUpsHtml}
 `;
   }
 }

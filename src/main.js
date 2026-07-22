@@ -24,6 +24,7 @@ import { UISystem } from './systems/UISystem.js';
 import { EnemyManager } from './managers/EnemyManager.js';
 import { BulletManager } from './managers/BulletManager.js';
 import { WaveManager } from './managers/WaveManager.js';
+import { PickupManager } from './managers/PickupManager.js';
 
 // --- Scene bootstrap ---
 const scene = new THREE.Scene();
@@ -59,8 +60,10 @@ const input = new InputSystem();
 const cameraSystem = new CameraSystem(camera);
 const ui = new UISystem();
 const enemyManager = new EnemyManager(scene, obstacleManager);
+enemyManager.setPlayerPositionProvider(() => player.mesh.position);
 const bulletManager = new BulletManager(scene, obstacleManager);
 const waveManager = new WaveManager(enemyManager);
+const pickupManager = new PickupManager(scene, obstacleManager, enemyManager);
 
 let kills = 0;
 let lastFrameTime = performance.now();
@@ -83,7 +86,8 @@ function animate(time) {
   const delta = Math.min((time - lastFrameTime) / 1000, 0.1);
   lastFrameTime = time;
 
-  player.update(input);
+  player.update(input, delta);
+  pickupManager.update(delta, player, input);
 
   const frameKills = bulletManager.updatePlayerBullets(
     enemyManager.getEnemies(),
@@ -97,13 +101,18 @@ function animate(time) {
   cameraSystem.update(player.mesh.position, player.mesh.rotation.y);
   renderer.render(scene, camera);
 
-  ui.update(player.health, kills, waveManager.wave, enemyManager.count, delta > 0 ? 1 / delta : 0);
+  ui.update(
+    player.health,
+    kills,
+    waveManager.wave,
+    enemyManager.count,
+    delta > 0 ? 1 / delta : 0,
+    pickupManager.getActivePowerUps()
+  );
 
   const meleeDamage = enemyManager.update(player.mesh.position, camera);
-  player.health -= meleeDamage;
-
   const bulletDamage = bulletManager.updateEnemyBullets(player.mesh.position);
-  player.health -= bulletDamage;
+  player.applyDamage(meleeDamage + bulletDamage);
 
   bulletManager.updateEffects(delta);
 

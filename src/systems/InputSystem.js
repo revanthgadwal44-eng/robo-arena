@@ -12,15 +12,20 @@ export class InputSystem {
     this.onShoot = null;
 
     this._lastShootTime = 0;
+    this._shootCooldownMs = PLAYER_SHOOT_COOLDOWN;
+    this._dashQueued = false;
 
     window.addEventListener('keydown', (event) => {
       if (event.code === 'Space') {
         event.preventDefault();
         const now = performance.now();
-        if (now - this._lastShootTime >= PLAYER_SHOOT_COOLDOWN) {
+        if (now - this._lastShootTime >= this._shootCooldownMs) {
           this._lastShootTime = now;
           this.onShoot?.();
         }
+      }
+      if (event.code === 'ShiftLeft' && !event.repeat) {
+        this._dashQueued = true;
       }
       this.keys[event.key.toLowerCase()] = true;
     });
@@ -33,5 +38,18 @@ export class InputSystem {
   /** @param {string} key */
   isPressed(key) {
     return !!this.keys[key];
+  }
+
+  /** @param {number} cooldownMs */
+  setShootCooldownMs(cooldownMs) {
+    this._shootCooldownMs = cooldownMs;
+  }
+
+  consumeDashPressed() {
+    if (!this._dashQueued) {
+      return false;
+    }
+    this._dashQueued = false;
+    return true;
   }
 }

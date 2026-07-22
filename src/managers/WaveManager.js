@@ -1,5 +1,3 @@
-import { SPAWN_RANGE } from '../constants.js';
-
 /**
  * Tracks wave progression and spawns the next wave
  * when all enemies are destroyed.
@@ -29,13 +27,7 @@ export class WaveManager {
 
         for (let i = 0; i < this.wave + 2; i++) {
 
-            const x =
-                Math.random() * SPAWN_RANGE * 2 - SPAWN_RANGE;
-
-            const z =
-                Math.random() * SPAWN_RANGE * 2 - SPAWN_RANGE;
-
-            this.enemyManager.spawn(x, z);
+            this.enemyManager.spawn();
 
         }
 
