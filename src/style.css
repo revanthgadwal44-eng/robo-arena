@@ -95,6 +95,51 @@ canvas {
   color: #b8dfff;
 }
 
+.boss-hud {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(580px, 72vw);
+  padding: 10px 18px 12px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(34, 6, 16, 0.9), rgba(22, 9, 26, 0.9));
+  border: 1px solid rgba(255, 102, 124, 0.55);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 173, 183, 0.18);
+}
+
+.boss-hud-label {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  margin-bottom: 8px;
+  color: #ffd2d7;
+}
+
+.boss-health-bar {
+  height: 22px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 168, 168, 0.4);
+}
+
+.boss-health-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #8b1f2d 0%, #e2434f 45%, #ff8a4e 100%);
+  transition: width 0.18s ease-out;
+}
+
+.boss-hud-value {
+  margin-top: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+
 .crosshair {
   position: absolute;
   top: 50%;

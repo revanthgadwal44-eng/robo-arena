@@ -14,6 +14,9 @@ import {
   DIRECTIONAL_LIGHT_X,
   DIRECTIONAL_LIGHT_Y,
   DIRECTIONAL_LIGHT_Z,
+  HEMISPHERE_LIGHT_SKY_COLOR,
+  HEMISPHERE_LIGHT_GROUND_COLOR,
+  HEMISPHERE_LIGHT_INTENSITY,
 } from './constants.js';
 import { Player } from './entities/Player.js';
 import { Arena } from './world/Arena.js';
@@ -26,6 +29,7 @@ import { BulletManager } from './managers/BulletManager.js';
 import { WaveManager } from './managers/WaveManager.js';
 import { PickupManager } from './managers/PickupManager.js';
 import { AudioManager } from './managers/AudioManager.js';
+import { BossManager } from './managers/BossManager.js';
 
 const GAME_STATES = {
   MAIN_MENU: 'main_menu',
@@ -45,17 +49,37 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, CAMERA_INITIAL_Y, CAMERA_INITIAL_Z);
 
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
 document.body.appendChild(renderer.domElement);
 
 scene.add(new THREE.AmbientLight(AMBIENT_LIGHT_COLOR, AMBIENT_LIGHT_INTENSITY));
+scene.add(new THREE.HemisphereLight(
+  HEMISPHERE_LIGHT_SKY_COLOR,
+  HEMISPHERE_LIGHT_GROUND_COLOR,
+  HEMISPHERE_LIGHT_INTENSITY
+));
 
 const directionalLight = new THREE.DirectionalLight(
   DIRECTIONAL_LIGHT_COLOR,
   DIRECTIONAL_LIGHT_INTENSITY
 );
 directionalLight.position.set(DIRECTIONAL_LIGHT_X, DIRECTIONAL_LIGHT_Y, DIRECTIONAL_LIGHT_Z);
+directionalLight.castShadow = true;
+directionalLight.shadow.mapSize.width = 2048;
+directionalLight.shadow.mapSize.height = 2048;
+directionalLight.shadow.radius = 4;
+directionalLight.shadow.bias = -0.0005;
+directionalLight.shadow.camera.near = 1;
+directionalLight.shadow.camera.far = 90;
+directionalLight.shadow.camera.left = -38;
+directionalLight.shadow.camera.right = 38;
+directionalLight.shadow.camera.top = 38;
+directionalLight.shadow.camera.bottom = -38;
 scene.add(directionalLight);
 
 // --- Systems & managers ---
@@ -68,8 +92,9 @@ const cameraSystem = new CameraSystem(camera);
 const ui = new UISystem();
 const enemyManager = new EnemyManager(scene, obstacleManager);
 enemyManager.setPlayerPositionProvider(() => player.mesh.position);
+const bossManager = new BossManager(scene, obstacleManager, enemyManager);
 const bulletManager = new BulletManager(scene, obstacleManager);
-const waveManager = new WaveManager(enemyManager);
+const waveManager = new WaveManager(enemyManager, bossManager, () => player.mesh.position);
 const pickupManager = new PickupManager(scene, obstacleManager, enemyManager);
 const audioManager = new AudioManager();
 
@@ -77,6 +102,7 @@ let kills = 0;
 let lastFrameTime = performance.now();
 let gameState = GAME_STATES.MAIN_MENU;
 let hasStartedMusic = false;
+let bossIncomingCountdown = null;
 
 enemyManager.spawnInitialEnemies();
 enemyManager.setShootingEnabled(false);
@@ -98,11 +124,34 @@ function resetRun() {
   kills = 0;
   player.respawn();
   bulletManager.clearAll();
+  bossManager.clearAll();
   enemyManager.clearAll();
   waveManager.reset();
   enemyManager.spawnInitialEnemies();
   pickupManager.reset(player, input);
-  ui.update(player.health, player.maxHealth, kills, waveManager.wave, enemyManager.count, 0, pickupManager.getActivePowerUps());
+  bossIncomingCountdown = null;
+  ui.update(
+    player.health,
+    player.maxHealth,
+    kills,
+    waveManager.wave,
+    enemyManager.count,
+    0,
+    pickupManager.getActivePowerUps(),
+    bossManager.getBossHealthState()
+  );
+}
+
+function onBossDefeated() {
+  const bossPosition = bossManager.boss ? bossManager.boss.mesh.position.clone() : null;
+  if (bossPosition) {
+    bulletManager.spawnBossExplosion(bossPosition);
+  }
+  bossManager.removeBoss();
+  pickupManager.spawnBurst(5);
+  ui.showNotification('BOSS DEFEATED');
+  cameraSystem.addShake(1.15);
+  audioManager.playExplosion();
 }
 
 function startMusicIfNeeded() {
@@ -173,27 +222,50 @@ function animate(time) {
 
   if (gameState === GAME_STATES.PLAYING) {
     player.update(input, delta);
+    if (player.isDashing()) {
+      bulletManager.emitPlayerDashTrail(player.mesh.position);
+    }
 
     const collectedPickups = pickupManager.update(delta, player, input);
     if (collectedPickups.length > 0) {
       audioManager.playPickup();
     }
 
+    let didDefeatBoss = false;
     const frameKills = bulletManager.updatePlayerBullets(
       enemyManager.getEnemies(),
       (enemy) => {
         enemyManager.remove(enemy);
         waveManager.onEnemyKilled();
+      },
+      (bullet) => {
+        const result = bossManager.handlePlayerBulletHit(bullet);
+        if (result.died) {
+          didDefeatBoss = true;
+        }
+        return result;
       }
     );
     kills += frameKills;
+    if (didDefeatBoss) {
+      kills += 1;
+      onBossDefeated();
+    }
     if (frameKills > 0) {
       audioManager.playExplosion();
     }
 
     const meleeDamage = enemyManager.update(player.mesh.position, camera);
+    const bossDamage = bossManager.update(
+      delta,
+      player.mesh.position,
+      {
+        onShoot: (bullet) => bulletManager.addEnemyBullet(bullet),
+        onCameraShake: (intensity) => cameraSystem.addShake(intensity),
+      }
+    );
     const bulletDamage = bulletManager.updateEnemyBullets(player.mesh.position);
-    const incomingDamage = meleeDamage + bulletDamage;
+    const incomingDamage = meleeDamage + bossDamage + bulletDamage;
     if (incomingDamage > 0) {
       player.applyDamage(incomingDamage);
       ui.flashDamage(Math.min(1, incomingDamage / 25));
@@ -215,6 +287,20 @@ function animate(time) {
       ui.showWaveAnnouncement(newWave);
       audioManager.playWaveComplete();
     }
+
+    if (waveManager.hasPendingBossSpawn) {
+      if (bossIncomingCountdown === null) {
+        bossIncomingCountdown = 1;
+        ui.showNotification('BOSS INCOMING');
+        cameraSystem.addShake(0.4);
+      } else {
+        bossIncomingCountdown = Math.max(0, bossIncomingCountdown - delta);
+        if (bossIncomingCountdown === 0) {
+          waveManager.spawnPendingBoss();
+          bossIncomingCountdown = null;
+        }
+      }
+    }
   }
 
   ui.updateDamageEffects(delta);
@@ -225,9 +311,10 @@ function animate(time) {
     player.maxHealth,
     kills,
     waveManager.wave,
-    enemyManager.count,
+    enemyManager.count + (bossManager.hasBoss ? 1 : 0),
     delta > 0 ? 1 / delta : 0,
-    pickupManager.getActivePowerUps()
+    pickupManager.getActivePowerUps(),
+    bossManager.getBossHealthState()
   );
 
   renderer.render(scene, camera);

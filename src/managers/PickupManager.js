@@ -60,8 +60,9 @@ export class PickupManager {
     return active;
   }
 
-  _spawnPickup(type) {
-    if (this.pickups.some((pickup) => pickup.type === type)) {
+  _spawnPickup(type, options = {}) {
+    const allowDuplicate = options.allowDuplicate ?? false;
+    if (!allowDuplicate && this.pickups.some((pickup) => pickup.type === type)) {
       return;
     }
 
@@ -219,6 +220,13 @@ export class PickupManager {
 
   _randomBetween(min, max) {
     return min + Math.random() * (max - min);
+  }
+
+  spawnBurst(count) {
+    for (let i = 0; i < count; i++) {
+      const randomType = PICKUP_TYPE_LIST[Math.floor(Math.random() * PICKUP_TYPE_LIST.length)];
+      this._spawnPickup(randomType, { allowDuplicate: true });
+    }
   }
 
   reset(player, input) {

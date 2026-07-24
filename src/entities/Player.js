@@ -67,6 +67,13 @@ export class Player {
     rightWheel.position.set(1.2, -0.5, 0);
     robot.add(rightWheel);
 
+    robot.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
     return robot;
   }
 
@@ -157,6 +164,10 @@ export class Player {
 
   applyDamage(amount) {
     this.health -= amount * this._damageMultiplier;
+  }
+
+  isDashing() {
+    return this._dashRemainingSeconds > 0;
   }
 
   /** Resets health and position after death — matches original behavior. */

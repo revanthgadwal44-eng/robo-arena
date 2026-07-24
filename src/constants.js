@@ -1,6 +1,6 @@
 /** Shared game configuration — single source for all magic numbers. */
 
-export const SCENE_BACKGROUND = 0x87ceeb;
+export const SCENE_BACKGROUND = 0x080f18;
 
 export const CAMERA_FOV = 75;
 export const CAMERA_NEAR = 0.1;
@@ -56,6 +56,27 @@ export const ENEMY_COLOR = 0xff0000;
 export const ENEMY_DAMAGED_ORANGE = 0xff8800;
 export const ENEMY_DAMAGED_YELLOW = 0xffff00;
 
+export const BOSS_MAX_HEALTH = 500;
+export const BOSS_SPEED = 0.012;
+export const BOSS_CHARGE_SPEED = 0.42;
+export const BOSS_BULLET_DAMAGE = 20;
+export const BOSS_CHARGE_DAMAGE = 30;
+export const BOSS_MISSILE_DAMAGE = 8;
+export const BOSS_COLLISION_RADIUS = 2.1;
+export const BOSS_MELEE_RANGE = 2.4;
+export const BOSS_SHOOT_RANGE = 20;
+export const BOSS_SHOT_COOLDOWN_SECONDS = 0.32;
+export const BOSS_SHOTS_PER_BURST = 3;
+export const BOSS_CHASE_MIN_DURATION_SECONDS = 1.2;
+export const BOSS_CHARGE_WINDUP_SECONDS = 1;
+export const BOSS_CHARGE_DURATION_SECONDS = 0.7;
+export const BOSS_COOLDOWN_SECONDS = 1.25;
+export const BOSS_COLOR = 0x6b1f8f;
+export const BOSS_DAMAGED_COLOR = 0xb54762;
+export const BOSS_CRITICAL_COLOR = 0xff4141;
+export const BOSS_MISSILE_SPEED = 0.12;
+export const BOSS_MISSILE_SPLASH_RADIUS = 2.8;
+
 /** Enemy archetypes — stats drive behavior via mesh.userData at spawn time. */
 export const ENEMY_TYPES = {
   NORMAL: 'normal',
@@ -101,7 +122,7 @@ export const ARENA_HALF = ARENA_SIZE / 2;
 
 export const WALL_HEIGHT = 6;
 
-export const WALL_THICKNESS = 1;
+export const WALL_THICKNESS = 2;
 
 export const FLOOR_COLOR = 0x808080;
 
@@ -114,13 +135,16 @@ export const SPAWN_PADDING = 5;
 export const SPAWN_RANGE =
     ARENA_HALF - SPAWN_PADDING;
 
-export const AMBIENT_LIGHT_COLOR = 0xffffff;
-export const AMBIENT_LIGHT_INTENSITY = 1;
+export const AMBIENT_LIGHT_COLOR = 0x6e8fc5;
+export const AMBIENT_LIGHT_INTENSITY = 0.4;
 export const DIRECTIONAL_LIGHT_COLOR = 0xffffff;
-export const DIRECTIONAL_LIGHT_INTENSITY = 2;
-export const DIRECTIONAL_LIGHT_X = 5;
-export const DIRECTIONAL_LIGHT_Y = 10;
-export const DIRECTIONAL_LIGHT_Z = 5;
+export const DIRECTIONAL_LIGHT_INTENSITY = 1.3;
+export const DIRECTIONAL_LIGHT_X = 18;
+export const DIRECTIONAL_LIGHT_Y = 26;
+export const DIRECTIONAL_LIGHT_Z = 12;
+export const HEMISPHERE_LIGHT_SKY_COLOR = 0x6aa8ff;
+export const HEMISPHERE_LIGHT_GROUND_COLOR = 0x10131a;
+export const HEMISPHERE_LIGHT_INTENSITY = 0.62;
 
 export const PICKUP_HEALTH_RESTORE = 25;
 export const PICKUP_DURATION_SECONDS = 10;

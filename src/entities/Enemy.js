@@ -30,6 +30,8 @@ export class Enemy {
     this.mesh = new THREE.Mesh(ENEMY_GEOMETRY, ENEMY_MATERIAL.clone());
     this.mesh.material.color.set(stats.color);
     this.mesh.position.set(x, PLAYER_Y, z);
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
 
     this.health = stats.health;
     this.mesh.userData = {

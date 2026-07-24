@@ -8,12 +8,14 @@ export class UISystem {
     this._onMainMenu = null;
     this._onSettings = null;
     this._damageFlashIntensity = 0;
+    this._displayedBossHealth = 0;
 
     this.root = document.createElement('div');
     this.root.className = 'ui-root';
     document.body.appendChild(this.root);
 
     this.hud = this._createHud();
+    this.bossHud = this._createBossHud();
     this.crosshair = this._createCrosshair();
     this.damageFlash = this._createDamageFlash();
     this.waveAnnouncement = this._createWaveAnnouncement();
@@ -22,6 +24,7 @@ export class UISystem {
 
     this.root.append(
       this.hud,
+      this.bossHud,
       this.crosshair,
       this.damageFlash,
       this.waveAnnouncement,
@@ -82,6 +85,27 @@ export class UISystem {
     const crosshair = document.createElement('div');
     crosshair.className = 'crosshair';
     return crosshair;
+  }
+
+  _createBossHud() {
+    const hud = document.createElement('div');
+    hud.className = 'boss-hud hidden';
+
+    const label = document.createElement('div');
+    label.className = 'boss-hud-label';
+    label.textContent = 'BOSS';
+
+    const healthBar = document.createElement('div');
+    healthBar.className = 'boss-health-bar';
+    this.bossHealthBarFill = document.createElement('div');
+    this.bossHealthBarFill.className = 'boss-health-bar-fill';
+    healthBar.appendChild(this.bossHealthBarFill);
+
+    this.bossHealthText = document.createElement('div');
+    this.bossHealthText.className = 'boss-hud-value';
+
+    hud.append(label, healthBar, this.bossHealthText);
+    return hud;
   }
 
   _createDamageFlash() {
@@ -178,6 +202,9 @@ export class UISystem {
   setInGameHudVisible(visible) {
     this.hud.classList.toggle('hidden', !visible);
     this.crosshair.classList.toggle('hidden', !visible);
+    if (!visible) {
+      this.bossHud.classList.add('hidden');
+    }
   }
 
   flashDamage(intensity = 1) {
@@ -214,8 +241,9 @@ export class UISystem {
    * @param {number} enemiesRemaining
    * @param {number} fps
    * @param {{name: string, remaining: number}[]} activePowerUps
+   * @param {{health: number, maxHealth: number} | null} bossHealthState
    */
-  update(health, maxHealth, kills, wave, enemiesRemaining, fps, activePowerUps) {
+  update(health, maxHealth, kills, wave, enemiesRemaining, fps, activePowerUps, bossHealthState = null) {
     const normalizedHealth = Math.max(0, Math.min(1, maxHealth > 0 ? health / maxHealth : 0));
     this.healthBarFill.style.width = `${(normalizedHealth * 100).toFixed(1)}%`;
     this.healthText.textContent = `${Math.max(0, Math.floor(health))} / ${Math.floor(maxHealth)}`;
@@ -229,5 +257,23 @@ export class UISystem {
       : `Power-ups: ${activePowerUps
         .map((powerUp) => `${powerUp.name} (${powerUp.remaining.toFixed(1)}s)`)
         .join(', ')}`;
+
+    if (!bossHealthState) {
+      this.bossHud.classList.add('hidden');
+      this._displayedBossHealth = 0;
+      return;
+    }
+
+    const bossHealth = Math.max(0, bossHealthState.health);
+    const bossMaxHealth = Math.max(1, bossHealthState.maxHealth);
+    if (this._displayedBossHealth === 0 || this.bossHud.classList.contains('hidden')) {
+      this._displayedBossHealth = bossHealth;
+    } else {
+      this._displayedBossHealth += (bossHealth - this._displayedBossHealth) * 0.18;
+    }
+    const displayedRatio = Math.min(1, Math.max(0, this._displayedBossHealth / bossMaxHealth));
+    this.bossHealthBarFill.style.width = `${(displayedRatio * 100).toFixed(1)}%`;
+    this.bossHealthText.textContent = `HP ${Math.floor(this._displayedBossHealth)} / ${Math.floor(bossMaxHealth)}`;
+    this.bossHud.classList.remove('hidden');
   }
 }

@@ -101,13 +101,13 @@ export class ObstacleManager {
   _getSizeForType(type) {
     switch (type) {
       case OBSTACLE_TYPES.WOODEN_CRATE:
-        return new THREE.Vector3(2, 2, 2);
+        return new THREE.Vector3(2.1, 1.9, 2.1);
       case OBSTACLE_TYPES.CONCRETE_BARRIER:
-        return new THREE.Vector3(4, 2, 1);
+        return new THREE.Vector3(4.3, 1.8, 1.4);
       case OBSTACLE_TYPES.METAL_PILLAR:
-        return new THREE.Vector3(2.4, 11, 2.4);
+        return new THREE.Vector3(2.6, 9.6, 2.6);
       case OBSTACLE_TYPES.ROCK:
-        return new THREE.Vector3(3, 1.5, 2.5);
+        return new THREE.Vector3(3.2, 1.7, 2.7);
       default:
         return new THREE.Vector3(2, 2, 2);
     }
