@@ -22,6 +22,7 @@ export class Arena {
     this._buildFloor(scene);
     this._buildWalls(scene);
     this._buildDecorations(scene);
+    this._addPerimeterAccentLights(scene);
   }
 
   _buildFloor(scene) {
@@ -52,6 +53,7 @@ export class Arena {
   _buildDecorations(scene) {
     this._addEnergyGenerators(scene);
     this._addRepairStations(scene);
+    this._addArenaProps(scene);
   }
 
   _createWall(scene, x, z, width, depth) {
@@ -155,6 +157,10 @@ export class Arena {
       const pointLight = new THREE.PointLight(0x73d4ff, 0.4, 10);
       pointLight.position.set(placement.x, 1.15, placement.z);
       scene.add(pointLight);
+
+      const warningLight = new THREE.PointLight(0xff8b2b, 0.28, 8);
+      warningLight.position.set(placement.x, 0.6, placement.z);
+      scene.add(warningLight);
     }
   }
 
@@ -214,6 +220,77 @@ export class Arena {
       panel.position.set(placement.x, 0.7, placement.z - 0.15);
       panel.rotation.x = -Math.PI / 6;
       scene.add(panel);
+    }
+  }
+
+  _addPerimeterAccentLights(scene) {
+    const placements = [
+      { x: -this.half + 2, z: -this.half / 2 },
+      { x: -this.half + 2, z: this.half / 2 },
+      { x: this.half - 2, z: -this.half / 2 },
+      { x: this.half - 2, z: this.half / 2 },
+      { x: -this.half / 2, z: -this.half + 2 },
+      { x: this.half / 2, z: -this.half + 2 },
+      { x: -this.half / 2, z: this.half - 2 },
+      { x: this.half / 2, z: this.half - 2 },
+    ];
+
+    for (const placement of placements) {
+      const blueLight = new THREE.PointLight(0x47b9ff, 0.55, 16);
+      blueLight.position.set(placement.x, 2.4, placement.z);
+      scene.add(blueLight);
+
+      const warningLight = new THREE.PointLight(0xff7a1a, 0.26, 11);
+      warningLight.position.set(placement.x * 0.94, 1.1, placement.z * 0.94);
+      scene.add(warningLight);
+    }
+  }
+
+  _addArenaProps(scene) {
+    const postMaterial = new THREE.MeshStandardMaterial({ color: 0x1d2633, roughness: 0.9, metalness: 0.2 });
+    const topMaterial = new THREE.MeshStandardMaterial({ color: 0x4dbdff, emissive: 0x1f7eb1, emissiveIntensity: 0.25 });
+    const crateMaterial = new THREE.MeshStandardMaterial({ color: 0x324158, roughness: 0.8, metalness: 0.25 });
+
+    const postPositions = [
+      { x: -14, z: -14 },
+      { x: 14, z: -14 },
+      { x: -14, z: 14 },
+      { x: 14, z: 14 },
+      { x: 0, z: -18 },
+      { x: 0, z: 18 },
+    ];
+
+    for (const position of postPositions) {
+      const post = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.16, 2.4, 10),
+        postMaterial
+      );
+      post.position.set(position.x, 1.2, position.z);
+      scene.add(post);
+
+      const top = new THREE.Mesh(
+        new THREE.SphereGeometry(0.26, 10, 10),
+        topMaterial
+      );
+      top.position.set(position.x, 2.45, position.z);
+      scene.add(top);
+    }
+
+    const cratePositions = [
+      { x: -10, z: 2 },
+      { x: 10, z: -2 },
+      { x: -4, z: 12 },
+      { x: 4, z: -12 },
+      { x: -18, z: 0 },
+      { x: 18, z: 0 },
+    ];
+    for (const position of cratePositions) {
+      const crate = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 1.2, 1.5),
+        crateMaterial
+      );
+      crate.position.set(position.x, 0.6, position.z);
+      scene.add(crate);
     }
   }
 }

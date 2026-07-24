@@ -25,6 +25,13 @@ import { EnemyManager } from './managers/EnemyManager.js';
 import { BulletManager } from './managers/BulletManager.js';
 import { WaveManager } from './managers/WaveManager.js';
 import { PickupManager } from './managers/PickupManager.js';
+import { AudioManager } from './managers/AudioManager.js';
+
+const GAME_STATES = {
+  MAIN_MENU: 'main_menu',
+  PLAYING: 'playing',
+  PAUSED: 'paused',
+};
 
 // --- Scene bootstrap ---
 const scene = new THREE.Scene();
@@ -64,14 +71,92 @@ enemyManager.setPlayerPositionProvider(() => player.mesh.position);
 const bulletManager = new BulletManager(scene, obstacleManager);
 const waveManager = new WaveManager(enemyManager);
 const pickupManager = new PickupManager(scene, obstacleManager, enemyManager);
+const audioManager = new AudioManager();
 
 let kills = 0;
 let lastFrameTime = performance.now();
+let gameState = GAME_STATES.MAIN_MENU;
+let hasStartedMusic = false;
 
 enemyManager.spawnInitialEnemies();
+enemyManager.setShootingEnabled(false);
+
+function setGameState(nextState) {
+  gameState = nextState;
+  const isPlaying = gameState === GAME_STATES.PLAYING;
+  const isMainMenu = gameState === GAME_STATES.MAIN_MENU;
+  const isPaused = gameState === GAME_STATES.PAUSED;
+
+  input.setEnabled(isPlaying);
+  enemyManager.setShootingEnabled(isPlaying);
+  ui.setInGameHudVisible(!isMainMenu);
+  ui.setMainMenuVisible(isMainMenu);
+  ui.setPauseMenuVisible(isPaused);
+}
+
+function resetRun() {
+  kills = 0;
+  player.respawn();
+  bulletManager.clearAll();
+  enemyManager.clearAll();
+  waveManager.reset();
+  enemyManager.spawnInitialEnemies();
+  pickupManager.reset(player, input);
+  ui.update(player.health, player.maxHealth, kills, waveManager.wave, enemyManager.count, 0, pickupManager.getActivePowerUps());
+}
+
+function startMusicIfNeeded() {
+  if (hasStartedMusic) {
+    return;
+  }
+  audioManager.startBackgroundMusic();
+  hasStartedMusic = true;
+}
+
+ui.setCallbacks({
+  onPlay: () => {
+    audioManager.resume();
+    startMusicIfNeeded();
+    setGameState(GAME_STATES.PLAYING);
+    ui.showWaveAnnouncement(waveManager.wave);
+  },
+  onResume: () => {
+    audioManager.resume();
+    setGameState(GAME_STATES.PLAYING);
+  },
+  onRestart: () => {
+    audioManager.resume();
+    resetRun();
+    setGameState(GAME_STATES.PLAYING);
+    ui.showWaveAnnouncement(waveManager.wave);
+  },
+  onMainMenu: () => {
+    resetRun();
+    setGameState(GAME_STATES.MAIN_MENU);
+  },
+  onSettings: () => {
+    audioManager.resume();
+  },
+});
 
 input.onShoot = () => {
+  if (gameState !== GAME_STATES.PLAYING) {
+    return;
+  }
+  audioManager.resume();
   bulletManager.shootPlayer(player.getShootOrigin(), player.getShootDirection());
+  audioManager.playShoot();
+};
+
+input.onTogglePause = () => {
+  if (gameState === GAME_STATES.MAIN_MENU) {
+    return;
+  }
+  if (gameState === GAME_STATES.PAUSED) {
+    setGameState(GAME_STATES.PLAYING);
+    return;
+  }
+  setGameState(GAME_STATES.PAUSED);
 };
 
 enemyManager.startShooting(
@@ -86,23 +171,58 @@ function animate(time) {
   const delta = Math.min((time - lastFrameTime) / 1000, 0.1);
   lastFrameTime = time;
 
-  player.update(input, delta);
-  pickupManager.update(delta, player, input);
+  if (gameState === GAME_STATES.PLAYING) {
+    player.update(input, delta);
 
-  const frameKills = bulletManager.updatePlayerBullets(
-    enemyManager.getEnemies(),
-    (enemy) => {
-      enemyManager.remove(enemy);
-      waveManager.onEnemyKilled();
+    const collectedPickups = pickupManager.update(delta, player, input);
+    if (collectedPickups.length > 0) {
+      audioManager.playPickup();
     }
-  );
-  kills += frameKills;
 
+    const frameKills = bulletManager.updatePlayerBullets(
+      enemyManager.getEnemies(),
+      (enemy) => {
+        enemyManager.remove(enemy);
+        waveManager.onEnemyKilled();
+      }
+    );
+    kills += frameKills;
+    if (frameKills > 0) {
+      audioManager.playExplosion();
+    }
+
+    const meleeDamage = enemyManager.update(player.mesh.position, camera);
+    const bulletDamage = bulletManager.updateEnemyBullets(player.mesh.position);
+    const incomingDamage = meleeDamage + bulletDamage;
+    if (incomingDamage > 0) {
+      player.applyDamage(incomingDamage);
+      ui.flashDamage(Math.min(1, incomingDamage / 25));
+      cameraSystem.addShake(0.3);
+      audioManager.playHit();
+    }
+
+    bulletManager.updateEffects(delta);
+
+    if (player.health <= 0) {
+      player.respawn();
+      ui.flashDamage(0.9);
+      cameraSystem.addShake(0.8);
+      audioManager.playExplosion();
+    }
+
+    const newWave = waveManager.checkAndSpawnNextWave();
+    if (newWave !== null) {
+      ui.showWaveAnnouncement(newWave);
+      audioManager.playWaveComplete();
+    }
+  }
+
+  ui.updateDamageEffects(delta);
   cameraSystem.update(player.mesh.position, player.mesh.rotation.y);
-  renderer.render(scene, camera);
 
   ui.update(
     player.health,
+    player.maxHealth,
     kills,
     waveManager.wave,
     enemyManager.count,
@@ -110,19 +230,10 @@ function animate(time) {
     pickupManager.getActivePowerUps()
   );
 
-  const meleeDamage = enemyManager.update(player.mesh.position, camera);
-  const bulletDamage = bulletManager.updateEnemyBullets(player.mesh.position);
-  player.applyDamage(meleeDamage + bulletDamage);
-
-  bulletManager.updateEffects(delta);
-
-  if (player.health <= 0) {
-    player.respawn();
-  }
-
-  waveManager.checkAndSpawnNextWave();
+  renderer.render(scene, camera);
 }
 
+setGameState(GAME_STATES.MAIN_MENU);
 animate();
 
 window.addEventListener('resize', () => {

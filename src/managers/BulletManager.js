@@ -201,7 +201,7 @@ export class BulletManager {
         continue;
       }
  
-      if (!removed && bullet.mesh.position.length() > BULLET_CLEANUP_DISTANCE) {
+      if (bullet.mesh.position.length() > BULLET_CLEANUP_DISTANCE) {
         this._removeEnemyBullet(i);
       }
     }
@@ -237,5 +237,20 @@ export class BulletManager {
       particle.mesh.material.dispose();
     }
     this._hitParticles.splice(index, 1);
+  }
+
+  clearAll() {
+    for (let i = this.playerBullets.length - 1; i >= 0; i--) {
+      this._removePlayerBullet(i);
+    }
+    for (let i = this.enemyBullets.length - 1; i >= 0; i--) {
+      this._removeEnemyBullet(i);
+    }
+    for (let i = this._muzzleFlashes.length - 1; i >= 0; i--) {
+      this._removeMuzzleFlash(i);
+    }
+    for (let i = this._hitParticles.length - 1; i >= 0; i--) {
+      this._removeHitParticle(i);
+    }
   }
 }

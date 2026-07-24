@@ -44,8 +44,9 @@ export class PickupManager {
   update(delta, player, input) {
     this._spawnPlayerPosition.set(player.mesh.position.x, 0, player.mesh.position.z);
     this._updateTimedEffects(delta, player, input);
-    this._collectPickups(player, input);
+    const collected = this._collectPickups(player, input);
     this._updateRespawns(delta);
+    return collected;
   }
 
   getActivePowerUps() {
@@ -118,6 +119,7 @@ export class PickupManager {
   }
 
   _collectPickups(player, input) {
+    const collected = [];
     for (let i = this.pickups.length - 1; i >= 0; i--) {
       const pickup = this.pickups[i];
       const distance = pickup.mesh.position.distanceTo(player.mesh.position);
@@ -128,11 +130,13 @@ export class PickupManager {
       this._applyPickup(pickup.type, player, input);
       this.scene.remove(pickup.mesh);
       this.pickups.splice(i, 1);
+      collected.push(pickup.type);
       this._respawnTimers.set(
         pickup.type,
         this._randomBetween(PICKUP_RESPAWN_MIN_SECONDS, PICKUP_RESPAWN_MAX_SECONDS)
       );
     }
+    return collected;
   }
 
   _applyPickup(type, player, input) {
@@ -215,5 +219,22 @@ export class PickupManager {
 
   _randomBetween(min, max) {
     return min + Math.random() * (max - min);
+  }
+
+  reset(player, input) {
+    for (const pickup of this.pickups) {
+      this.scene.remove(pickup.mesh);
+    }
+    this.pickups = [];
+    this.rapidFireRemaining = 0;
+    this.shieldRemaining = 0;
+    input.setShootCooldownMs(PLAYER_SHOOT_COOLDOWN);
+    player.setDamageMultiplier(1);
+
+    this._spawnPlayerPosition.set(player.mesh.position.x, 0, player.mesh.position.z);
+    for (const pickupType of PICKUP_TYPE_LIST) {
+      this._respawnTimers.set(pickupType, 0);
+      this._spawnPickup(pickupType);
+    }
   }
 }

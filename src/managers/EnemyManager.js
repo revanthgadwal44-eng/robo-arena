@@ -39,6 +39,7 @@ export class EnemyManager {
     this._testPosition = new THREE.Vector3();
     this._upAxis = new THREE.Vector3(0, 1, 0);
     this._getPlayerPosition = null;
+    this._shootingEnabled = true;
   }
 
   setPlayerPositionProvider(getPlayerPosition) {
@@ -107,6 +108,10 @@ export class EnemyManager {
 
   /** @param {THREE.Vector3} playerPosition */
   _enemyShoot(playerPosition, onEnemyShoot) {
+    if (!this._shootingEnabled) {
+      return;
+    }
+
     for (const enemy of this.enemies) {
       const distance = enemy.mesh.position.distanceTo(playerPosition);
       if (distance > ENEMY_CHASE_STOP_DISTANCE) {
@@ -215,5 +220,16 @@ export class EnemyManager {
       enemy.dispose(this.scene);
       this.enemies.splice(index, 1);
     }
+  }
+
+  setShootingEnabled(enabled) {
+    this._shootingEnabled = enabled;
+  }
+
+  clearAll() {
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      this.enemies[i].dispose(this.scene);
+    }
+    this.enemies = [];
   }
 }
