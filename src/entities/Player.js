@@ -34,6 +34,7 @@ export class Player {
     this._facing = new THREE.Vector3();
     this._movement = new THREE.Vector3();
     this._dashMovement = new THREE.Vector3();
+    this._shootOrigin = new THREE.Vector3();
     this._dashRemainingSeconds = 0;
     this._dashCooldownUntilMs = 0;
     this._damageMultiplier = 1;
@@ -139,9 +140,8 @@ export class Player {
 
   /** World position where player bullets spawn. */
   getShootOrigin() {
-    const origin = this.mesh.position.clone();
-    origin.y = PLAYER_Y;
-    return origin;
+    this._shootOrigin.set(this.mesh.position.x, PLAYER_Y, this.mesh.position.z);
+    return this._shootOrigin;
   }
 
   /** Normalized horizontal direction the robot is facing. */
@@ -151,7 +151,7 @@ export class Player {
       0,
       -Math.cos(this.mesh.rotation.y)
     );
-    return this._facing.clone();
+    return this._facing;
   }
 
   heal(amount) {

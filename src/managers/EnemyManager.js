@@ -113,8 +113,11 @@ export class EnemyManager {
     }
 
     for (const enemy of this.enemies) {
-      const distance = enemy.mesh.position.distanceTo(playerPosition);
-      if (distance > ENEMY_CHASE_STOP_DISTANCE) {
+      const dx = enemy.mesh.position.x - playerPosition.x;
+      const dy = enemy.mesh.position.y - playerPosition.y;
+      const dz = enemy.mesh.position.z - playerPosition.z;
+      const distanceSq = dx * dx + dy * dy + dz * dz;
+      if (distanceSq > ENEMY_CHASE_STOP_DISTANCE * ENEMY_CHASE_STOP_DISTANCE) {
         continue;
       }
 

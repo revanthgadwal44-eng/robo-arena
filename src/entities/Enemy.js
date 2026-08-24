@@ -99,8 +99,11 @@ export class Enemy {
 
   /** Returns melee damage to apply to the player when in range, else 0. */
   getMeleeDamage(playerPosition) {
-    const distance = this.mesh.position.distanceTo(playerPosition);
-    return distance < ENEMY_MELEE_RANGE ? ENEMY_MELEE_DAMAGE : 0;
+    const dx = this.mesh.position.x - playerPosition.x;
+    const dy = this.mesh.position.y - playerPosition.y;
+    const dz = this.mesh.position.z - playerPosition.z;
+    const distanceSq = dx * dx + dy * dy + dz * dz;
+    return distanceSq < ENEMY_MELEE_RANGE * ENEMY_MELEE_RANGE ? ENEMY_MELEE_DAMAGE : 0;
   }
 
   updateHealthBar(camera) {

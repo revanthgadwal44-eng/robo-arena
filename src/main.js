@@ -49,10 +49,11 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, CAMERA_INITIAL_Y, CAMERA_INITIAL_Z);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 document.body.appendChild(renderer.domElement);
@@ -70,16 +71,16 @@ const directionalLight = new THREE.DirectionalLight(
 );
 directionalLight.position.set(DIRECTIONAL_LIGHT_X, DIRECTIONAL_LIGHT_Y, DIRECTIONAL_LIGHT_Z);
 directionalLight.castShadow = true;
-directionalLight.shadow.mapSize.width = 2048;
-directionalLight.shadow.mapSize.height = 2048;
-directionalLight.shadow.radius = 4;
-directionalLight.shadow.bias = -0.0005;
+directionalLight.shadow.mapSize.width = 1024;
+directionalLight.shadow.mapSize.height = 1024;
+directionalLight.shadow.radius = 1;
+directionalLight.shadow.bias = -0.00035;
 directionalLight.shadow.camera.near = 1;
 directionalLight.shadow.camera.far = 90;
-directionalLight.shadow.camera.left = -38;
-directionalLight.shadow.camera.right = 38;
-directionalLight.shadow.camera.top = 38;
-directionalLight.shadow.camera.bottom = -38;
+directionalLight.shadow.camera.left = -32;
+directionalLight.shadow.camera.right = 32;
+directionalLight.shadow.camera.top = 32;
+directionalLight.shadow.camera.bottom = -32;
 scene.add(directionalLight);
 
 // --- Systems & managers ---
@@ -326,5 +327,6 @@ animate();
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.setSize(window.innerWidth, window.innerHeight);
 });

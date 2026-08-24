@@ -85,6 +85,8 @@ export class Boss {
     this._smokeSpawnCooldown = 0;
     this._sparks = [];
     this._smokes = [];
+    this._targetVector = new THREE.Vector3();
+    this._spawnOffset = new THREE.Vector3();
 
     this._buildModel();
     this._initEffectPool(scene);
@@ -197,8 +199,8 @@ export class Boss {
     this._legs[1].rotation.x = moving ? stepB : 0;
     this._legs[2].rotation.x = moving ? stepB : 0;
 
-    const target = playerPosition.clone().sub(this.group.position);
-    const desiredYaw = Math.atan2(target.x, target.z);
+    this._targetVector.copy(playerPosition).sub(this.group.position);
+    const desiredYaw = Math.atan2(this._targetVector.x, this._targetVector.z);
     const relativeYaw = THREE.MathUtils.clamp(desiredYaw - this.group.rotation.y, -0.8, 0.8);
     this._cannonPivot.rotation.y = THREE.MathUtils.lerp(this._cannonPivot.rotation.y, relativeYaw, 0.08);
 
@@ -256,11 +258,12 @@ export class Boss {
     }
     particle.life = particle.maxLife;
     particle.mesh.visible = true;
-    particle.mesh.position.copy(this.group.position).add(new THREE.Vector3(
+    this._spawnOffset.set(
       (Math.random() - 0.5) * 3.2,
       Math.random() * 2.2,
       (Math.random() - 0.5) * 3.2
-    ));
+    );
+    particle.mesh.position.copy(this.group.position).add(this._spawnOffset);
     particle.velocity.set(
       (Math.random() - 0.5) * 1.3,
       Math.random() * 1.5,
@@ -275,11 +278,12 @@ export class Boss {
     }
     particle.life = particle.maxLife;
     particle.mesh.visible = true;
-    particle.mesh.position.copy(this.group.position).add(new THREE.Vector3(
+    this._spawnOffset.set(
       (Math.random() - 0.5) * 2.2,
       0.9 + Math.random() * 1.6,
       (Math.random() - 0.5) * 2.2
-    ));
+    );
+    particle.mesh.position.copy(this.group.position).add(this._spawnOffset);
     particle.velocity.set((Math.random() - 0.5) * 0.2, 0.42 + Math.random() * 0.26, (Math.random() - 0.5) * 0.2);
     particle.mesh.scale.setScalar(1);
     particle.mesh.material.opacity = 0.32;

@@ -146,7 +146,10 @@ export class BulletManager {
 
       for (let j = enemies.length - 1; j >= 0; j--) {
         const enemy = enemies[j];
-        if (bullet.mesh.position.distanceTo(enemy.mesh.position) >= ENEMY_COLLISION_RADIUS) {
+        const dx = bullet.mesh.position.x - enemy.mesh.position.x;
+        const dy = bullet.mesh.position.y - enemy.mesh.position.y;
+        const dz = bullet.mesh.position.z - enemy.mesh.position.z;
+        if (dx * dx + dy * dy + dz * dz >= ENEMY_COLLISION_RADIUS * ENEMY_COLLISION_RADIUS) {
           continue;
         }
 
@@ -212,9 +215,12 @@ export class BulletManager {
         }
       }
 
-      const distance = bullet.mesh.position.distanceTo(playerPosition);
+      const dx = bullet.mesh.position.x - playerPosition.x;
+      const dy = bullet.mesh.position.y - playerPosition.y;
+      const dz = bullet.mesh.position.z - playerPosition.z;
       const hitRadius = ENEMY_COLLISION_RADIUS + bulletRadius * 0.35;
-      if (distance < hitRadius) {
+      const distanceSq = dx * dx + dy * dy + dz * dz;
+      if (distanceSq < hitRadius * hitRadius) {
         if (bullet.isMissile) {
           damage += this._explodeEnemyBullet(i, playerPosition);
         } else {
@@ -241,8 +247,12 @@ export class BulletManager {
     let damage = 0;
     const splashRadius = bullet.splashRadius ?? 0;
     if (splashRadius > 0) {
-      const distance = bullet.mesh.position.distanceTo(playerPosition);
-      if (distance < splashRadius) {
+      const dx = bullet.mesh.position.x - playerPosition.x;
+      const dy = bullet.mesh.position.y - playerPosition.y;
+      const dz = bullet.mesh.position.z - playerPosition.z;
+      const distanceSq = dx * dx + dy * dy + dz * dz;
+      if (distanceSq < splashRadius * splashRadius) {
+        const distance = Math.sqrt(distanceSq);
         const normalized = 1 - distance / splashRadius;
         damage += (bullet.splashDamage ?? 0) * Math.max(0.2, normalized);
       }
