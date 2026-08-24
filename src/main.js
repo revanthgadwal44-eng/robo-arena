@@ -17,6 +17,7 @@ import {
   HEMISPHERE_LIGHT_SKY_COLOR,
   HEMISPHERE_LIGHT_GROUND_COLOR,
   HEMISPHERE_LIGHT_INTENSITY,
+  PICKUP_RAPID_FIRE_COOLDOWN_MS,
 } from './constants.js';
 import { Player } from './entities/Player.js';
 import { Arena } from './world/Arena.js';
@@ -30,6 +31,7 @@ import { WaveManager } from './managers/WaveManager.js';
 import { PickupManager } from './managers/PickupManager.js';
 import { AudioManager } from './managers/AudioManager.js';
 import { BossManager } from './managers/BossManager.js';
+import { WeaponManager } from './managers/WeaponManager.js';
 
 const GAME_STATES = {
   MAIN_MENU: 'main_menu',
@@ -98,6 +100,15 @@ const bulletManager = new BulletManager(scene, obstacleManager);
 const waveManager = new WaveManager(enemyManager, bossManager, () => player.mesh.position);
 const pickupManager = new PickupManager(scene, obstacleManager, enemyManager);
 const audioManager = new AudioManager();
+const weaponManager = new WeaponManager(bulletManager, audioManager, input);
+pickupManager.setShootCooldownProvider(() => weaponManager.getShootCooldownMs());
+weaponManager.setResolveCooldownMs(() => (
+  pickupManager.rapidFireRemaining > 0
+    ? PICKUP_RAPID_FIRE_COOLDOWN_MS
+    : weaponManager.getShootCooldownMs()
+));
+weaponManager.syncInputCooldown();
+ui.updateWeapon(weaponManager.getCurrentWeapon());
 
 let kills = 0;
 let lastFrameTime = performance.now();
@@ -130,6 +141,8 @@ function resetRun() {
   waveManager.reset();
   enemyManager.spawnInitialEnemies();
   pickupManager.reset(player, input);
+  weaponManager.reset();
+  ui.updateWeapon(weaponManager.getCurrentWeapon());
   bossIncomingCountdown = null;
   ui.update(
     player.health,
@@ -168,6 +181,7 @@ ui.setCallbacks({
     audioManager.resume();
     startMusicIfNeeded();
     setGameState(GAME_STATES.PLAYING);
+    ui.updateWeapon(weaponManager.getCurrentWeapon());
     ui.showWaveAnnouncement(waveManager.wave);
   },
   onResume: () => {
@@ -194,8 +208,16 @@ input.onShoot = () => {
     return;
   }
   audioManager.resume();
-  bulletManager.shootPlayer(player.getShootOrigin(), player.getShootDirection());
-  audioManager.playShoot();
+  weaponManager.fire(player);
+};
+
+input.onWeaponSwitch = (weaponId) => {
+  if (gameState !== GAME_STATES.PLAYING) {
+    return;
+  }
+  if (weaponManager.switchWeapon(weaponId)) {
+    ui.updateWeapon(weaponManager.getCurrentWeapon());
+  }
 };
 
 input.onTogglePause = () => {

@@ -65,6 +65,25 @@ export class AudioManager {
     this._playTone({ frequency: 420, sweepTo: 220, duration: 0.06, type: 'square', volume: 0.08 });
   }
 
+  /**
+   * Plays a weapon-specific shoot sound. Falls back to the default shoot tone.
+   * @param {string} [soundId]
+   */
+  playWeaponShoot(soundId) {
+    switch (soundId) {
+      case 'assault_rifle':
+        this._playTone({ frequency: 520, sweepTo: 380, duration: 0.04, type: 'square', volume: 0.07 });
+        break;
+      case 'shotgun':
+        this._playTone({ frequency: 95, sweepTo: 42, duration: 0.14, type: 'sawtooth', volume: 0.11 });
+        break;
+      case 'pistol':
+      default:
+        this.playShoot();
+        break;
+    }
+  }
+
   playHit() {
     this._playTone({ frequency: 180, duration: 0.08, type: 'triangle', volume: 0.1 });
   }

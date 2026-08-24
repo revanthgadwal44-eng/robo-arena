@@ -64,7 +64,17 @@ export class UISystem {
     this.powerUpsText = document.createElement('div');
     this.powerUpsText.className = 'powerup-text';
 
-    hud.append(title, healthLabel, healthBar, this.healthText, stats, this.powerUpsText);
+    this.weaponPanel = document.createElement('div');
+    this.weaponPanel.className = 'weapon-panel';
+    this.weaponNameText = document.createElement('div');
+    this.weaponNameText.className = 'weapon-name';
+    this.weaponListText = document.createElement('div');
+    this.weaponListText.className = 'weapon-list';
+    this.weaponListText.textContent = '1 Pistol\n2 Assault Rifle\n3 Shotgun';
+    this.weaponPanel.append(this.weaponNameText, this.weaponListText);
+    this._displayedWeaponId = null;
+
+    hud.append(title, healthLabel, healthBar, this.healthText, stats, this.powerUpsText, this.weaponPanel);
     return hud;
   }
 
@@ -224,6 +234,18 @@ export class UISystem {
     this.waveAnnouncement.classList.remove('wave-announce-active');
     void this.waveAnnouncement.offsetWidth;
     this.waveAnnouncement.classList.add('wave-announce-active');
+  }
+
+  /**
+   * Updates weapon HUD only when the active weapon changes.
+   * @param {{ id: string, name: string }} weapon
+   */
+  updateWeapon(weapon) {
+    if (!weapon || weapon.id === this._displayedWeaponId) {
+      return;
+    }
+    this._displayedWeaponId = weapon.id;
+    this.weaponNameText.textContent = `WEAPON: ${weapon.name.toUpperCase()}`;
   }
 
   updateDamageEffects(delta) {

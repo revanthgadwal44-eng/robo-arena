@@ -4,7 +4,6 @@ import {
   PLAYER_SPAWN_X,
   PLAYER_SPAWN_Z,
   PLAYER_COLLISION_RADIUS,
-  PLAYER_SHOOT_COOLDOWN,
   ENEMY_COLLISION_RADIUS,
   ENEMY_SPAWN_ATTEMPTS,
   PICKUP_HEALTH_RESTORE,
@@ -12,6 +11,8 @@ import {
   PICKUP_RAPID_FIRE_COOLDOWN_MS,
   PICKUP_RESPAWN_MIN_SECONDS,
   PICKUP_RESPAWN_MAX_SECONDS,
+  WEAPONS,
+  WEAPON_IDS,
 } from '../constants.js';
 
 const PICKUP_TYPES = {
@@ -34,11 +35,20 @@ export class PickupManager {
     this.shieldRemaining = 0;
     this._respawnTimers = new Map();
     this._spawnPlayerPosition = new THREE.Vector3(PLAYER_SPAWN_X, 0, PLAYER_SPAWN_Z);
+    /** Restores weapon cooldown after timed power-ups expire. */
+    this._getBaseShootCooldownMs = () => WEAPONS[WEAPON_IDS.PISTOL].cooldown * 1000;
 
     for (const pickupType of PICKUP_TYPE_LIST) {
       this._respawnTimers.set(pickupType, 0);
       this._spawnPickup(pickupType);
     }
+  }
+
+  /**
+   * @param {() => number} provider Returns base shoot cooldown in ms for the active weapon.
+   */
+  setShootCooldownProvider(provider) {
+    this._getBaseShootCooldownMs = provider;
   }
 
   update(delta, player, input) {
@@ -160,7 +170,7 @@ export class PickupManager {
     if (this.rapidFireRemaining > 0) {
       this.rapidFireRemaining = Math.max(0, this.rapidFireRemaining - delta);
       if (this.rapidFireRemaining === 0) {
-        input.setShootCooldownMs(PLAYER_SHOOT_COOLDOWN);
+        input.setShootCooldownMs(this._getBaseShootCooldownMs());
       }
     }
 
@@ -236,7 +246,7 @@ export class PickupManager {
     this.pickups = [];
     this.rapidFireRemaining = 0;
     this.shieldRemaining = 0;
-    input.setShootCooldownMs(PLAYER_SHOOT_COOLDOWN);
+    input.setShootCooldownMs(this._getBaseShootCooldownMs());
     player.setDamageMultiplier(1);
 
     this._spawnPlayerPosition.set(player.mesh.position.x, 0, player.mesh.position.z);

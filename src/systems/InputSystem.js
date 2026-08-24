@@ -1,7 +1,13 @@
 /**
  * Centralized keyboard input — tracks key state and fires shoot callback on Space.
  */
-import { PLAYER_SHOOT_COOLDOWN } from '../constants.js';
+import { WEAPON_IDS } from '../constants.js';
+
+const WEAPON_KEY_MAP = {
+  '1': WEAPON_IDS.PISTOL,
+  '2': WEAPON_IDS.ASSAULT_RIFLE,
+  '3': WEAPON_IDS.SHOTGUN,
+};
 
 export class InputSystem {
   constructor() {
@@ -12,9 +18,11 @@ export class InputSystem {
     this.onShoot = null;
     /** @type {(() => void) | null} */
     this.onTogglePause = null;
+    /** @type {((weaponId: string) => void) | null} */
+    this.onWeaponSwitch = null;
 
     this._lastShootTime = 0;
-    this._shootCooldownMs = PLAYER_SHOOT_COOLDOWN;
+    this._shootCooldownMs = 250;
     this._dashQueued = false;
     this._enabled = true;
 
@@ -40,6 +48,12 @@ export class InputSystem {
       if (event.code === 'ShiftLeft' && !event.repeat) {
         this._dashQueued = true;
       }
+
+      const weaponId = WEAPON_KEY_MAP[event.key];
+      if (weaponId && !event.repeat) {
+        this.onWeaponSwitch?.(weaponId);
+      }
+
       this.keys[event.key.toLowerCase()] = true;
     });
 

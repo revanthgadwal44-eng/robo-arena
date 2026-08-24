@@ -31,7 +31,46 @@ export const BULLET_RADIUS = 0.15;
 export const BULLET_SPEED = 0.3;
 export const ENEMY_BULLET_SPEED = 0.1;
 export const BULLET_CLEANUP_DISTANCE = 50;
+/** Default bullet damage — used when a bullet has no explicit damage value. */
 export const BULLET_DAMAGE = 10;
+
+/** Weapon identifiers for keyboard switching and lookups. */
+export const WEAPON_IDS = {
+  PISTOL: 'pistol',
+  ASSAULT_RIFLE: 'assault_rifle',
+  SHOTGUN: 'shotgun',
+};
+
+/** Data-driven weapon definitions — single source for all player weapons. */
+export const WEAPONS = {
+  [WEAPON_IDS.PISTOL]: {
+    id: WEAPON_IDS.PISTOL,
+    name: 'Pistol',
+    damage: 10,
+    cooldown: 0.25,
+    bulletCount: 1,
+    spread: 0.01,
+    sound: 'pistol',
+  },
+  [WEAPON_IDS.ASSAULT_RIFLE]: {
+    id: WEAPON_IDS.ASSAULT_RIFLE,
+    name: 'Assault Rifle',
+    damage: 7,
+    cooldown: 0.10,
+    bulletCount: 1,
+    spread: 0.04,
+    sound: 'assault_rifle',
+  },
+  [WEAPON_IDS.SHOTGUN]: {
+    id: WEAPON_IDS.SHOTGUN,
+    name: 'Shotgun',
+    damage: 8,
+    cooldown: 0.8,
+    bulletCount: 6,
+    spread: 0.18,
+    sound: 'shotgun',
+  },
+};
 export const ENEMY_BULLET_DAMAGE = 10;
 export const PLAYER_BULLET_COLOR = 0xffff00;
 export const ENEMY_BULLET_COLOR = 0xff0000;

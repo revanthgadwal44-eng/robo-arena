@@ -93,19 +93,29 @@ export class BulletManager {
     });
   }
 
-  shootPlayer(origin, direction) {
+  /**
+   * Spawns a player bullet with optional weapon stats.
+   * @param {import('three').Vector3} origin
+   * @param {import('three').Vector3} direction
+   * @param {{ damage?: number, spawnEffects?: boolean }} [options]
+   */
+  shootPlayer(origin, direction, options = {}) {
+    const damage = options.damage;
+    const spawnEffects = options.spawnEffects !== false;
     const bulletMesh = new THREE.Mesh(PLAYER_BULLET_GEOMETRY, PLAYER_BULLET_MATERIAL);
     bulletMesh.position.copy(origin);
     bulletMesh.castShadow = true;
     this.scene.add(bulletMesh);
-    this.playerBullets.push(new Bullet(bulletMesh, direction, undefined, {
+    this.playerBullets.push(new Bullet(bulletMesh, direction, damage, {
       trailType: 'player',
       speed: BULLET_SPEED,
       radius: BULLET_RADIUS,
     }));
 
-    this._spawnFlash(origin, direction);
-    this._spawnTrail(origin, direction, 0xfff2b0, 0.22);
+    if (spawnEffects) {
+      this._spawnFlash(origin, direction);
+      this._spawnTrail(origin, direction, 0xfff2b0, 0.22);
+    }
   }
 
   addEnemyBullet(bullet) {
@@ -153,7 +163,7 @@ export class BulletManager {
           continue;
         }
 
-        const died = enemy.takeDamage();
+        const died = enemy.takeDamage(bullet.damage);
         this._spawnSparks(bullet.mesh.position, 8, 0xffa45c, 0.4);
         this._removePlayerBullet(i);
         if (died) {
