@@ -163,7 +163,7 @@ export class BulletManager {
           continue;
         }
 
-        const died = enemy.takeDamage(bullet.damage);
+        const died = enemy.takeDamage(bullet.damage, bullet.direction);
         this._spawnSparks(bullet.mesh.position, 8, 0xffa45c, 0.4);
         this._removePlayerBullet(i);
         if (died) {

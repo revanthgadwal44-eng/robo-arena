@@ -278,7 +278,7 @@ function animate(time) {
       audioManager.playExplosion();
     }
 
-    const meleeDamage = enemyManager.update(player.mesh.position, camera);
+    const meleeDamage = enemyManager.update(player.mesh.position, camera, delta);
     const bossDamage = bossManager.update(
       delta,
       player.mesh.position,

@@ -94,6 +94,19 @@ export const ENEMY_MIN_SPAWN_DISTANCE_FROM_PLAYER = 5;
 export const ENEMY_COLOR = 0xff0000;
 export const ENEMY_DAMAGED_ORANGE = 0xff8800;
 export const ENEMY_DAMAGED_YELLOW = 0xffff00;
+export const ENEMY_FLASH_COLOR = 0xffffff;
+export const ENEMY_HURT_DURATION_SECONDS = 0.25;
+export const ENEMY_DETECTION_RANGE = 16;
+export const ENEMY_AVOIDANCE_RADIUS = 4.5;
+export const ENEMY_LOS_CHECK_INTERVAL_SECONDS = 0.25;
+
+export const ENEMY_STATES = {
+  IDLE: 'idle',
+  CHASE: 'chase',
+  ATTACK: 'attack',
+  HURT: 'hurt',
+  DEAD: 'dead',
+};
 
 export const BOSS_MAX_HEALTH = 500;
 export const BOSS_SPEED = 0.012;
@@ -129,18 +142,33 @@ export const ENEMY_TYPE_STATS = {
     speed: 0.02,
     damage: 10,
     color: ENEMY_COLOR,
+    attackRange: 5.5,
+    attackCooldown: 1.1,
+    detectionRange: 16,
+    hurtDuration: 0.25,
+    knockback: 0.6,
   },
   [ENEMY_TYPES.FAST]: {
     health: 30,
     speed: 0.04,
     damage: 8,
     color: 0xff6600,
+    attackRange: 4.2,
+    attackCooldown: 0.7,
+    detectionRange: 18,
+    hurtDuration: 0.18,
+    knockback: 0.8,
   },
   [ENEMY_TYPES.TANK]: {
     health: 100,
     speed: 0.01,
     damage: 15,
     color: 0x880000,
+    attackRange: 7.5,
+    attackCooldown: 1.6,
+    detectionRange: 14,
+    hurtDuration: 0.35,
+    knockback: 0.3,
   },
 };
 
