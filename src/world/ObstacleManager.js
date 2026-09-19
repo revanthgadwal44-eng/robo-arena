@@ -5,6 +5,7 @@ import {
   WALL_THICKNESS,
   PLAYER_SPAWN_X,
   PLAYER_SPAWN_Z,
+  ARENA_ZONES,
 } from '../constants.js';
 
 const MIN_OBSTACLE_COUNT = 20;
@@ -12,10 +13,20 @@ const MAX_OBSTACLE_COUNT = 30;
 const RESERVE_DISTANCE = 8;
 const MIN_OBSTACLE_SPACING = 5;
 const RESERVED_ZONES = [
-  { x: PLAYER_SPAWN_X, z: PLAYER_SPAWN_Z, radius: RESERVE_DISTANCE },
-  { x: 5, z: 0, radius: RESERVE_DISTANCE },
-  { x: -5, z: 5, radius: RESERVE_DISTANCE },
-  { x: 0, z: -6, radius: RESERVE_DISTANCE },
+  { x: PLAYER_SPAWN_X, z: PLAYER_SPAWN_Z, radius: RESERVE_DISTANCE + 2 },
+  { x: ARENA_ZONES.OPEN_CENTER.x, z: ARENA_ZONES.OPEN_CENTER.z, radius: ARENA_ZONES.OPEN_CENTER.radius },
+  { x: ARENA_ZONES.BOSS_ARENA.x, z: ARENA_ZONES.BOSS_ARENA.z, radius: 8 },
+];
+
+const ZONE_LAYOUT = [
+  { zone: ARENA_ZONES.COVER_NW, count: 4, types: [OBSTACLE_TYPES.CONCRETE_BARRIER, OBSTACLE_TYPES.METAL_PILLAR, OBSTACLE_TYPES.ROCK] },
+  { zone: ARENA_ZONES.COVER_NE, count: 4, types: [OBSTACLE_TYPES.CONCRETE_BARRIER, OBSTACLE_TYPES.WOODEN_CRATE, OBSTACLE_TYPES.ROCK] },
+  { zone: ARENA_ZONES.COVER_SW, count: 4, types: [OBSTACLE_TYPES.WOODEN_CRATE, OBSTACLE_TYPES.ROCK, OBSTACLE_TYPES.METAL_PILLAR] },
+  { zone: ARENA_ZONES.COVER_SE, count: 4, types: [OBSTACLE_TYPES.CONCRETE_BARRIER, OBSTACLE_TYPES.ROCK] },
+  { zone: ARENA_ZONES.SPAWN_N, count: 2, types: [OBSTACLE_TYPES.WOODEN_CRATE] },
+  { zone: ARENA_ZONES.SPAWN_S, count: 2, types: [OBSTACLE_TYPES.WOODEN_CRATE] },
+  { zone: ARENA_ZONES.SPAWN_E, count: 2, types: [OBSTACLE_TYPES.ROCK] },
+  { zone: ARENA_ZONES.SPAWN_W, count: 2, types: [OBSTACLE_TYPES.ROCK] },
 ];
 const OBSTACLE_TYPE_LIST = Object.values(OBSTACLE_TYPES);
 
@@ -28,24 +39,59 @@ export class ObstacleManager {
   }
 
   spawnObstacles() {
-    const count = MIN_OBSTACLE_COUNT + Math.floor(Math.random() * (MAX_OBSTACLE_COUNT - MIN_OBSTACLE_COUNT + 1));
-    let attempts = 0;
+    for (const layout of ZONE_LAYOUT) {
+      for (let i = 0; i < layout.count; i++) {
+        const type = layout.types[i % layout.types.length];
+        const obstacleSize = this._getSizeForType(type);
+        const position = this._pickZonePosition(layout.zone, obstacleSize);
+        if (!position) {
+          continue;
+        }
+        this.obstacles.push(new Obstacle(this.scene, type, new THREE.Vector3(position.x, 0, position.z)));
+      }
+    }
 
-    while (this.obstacles.length < count && attempts < 1200) {
+    const target = MIN_OBSTACLE_COUNT + Math.floor(Math.random() * (MAX_OBSTACLE_COUNT - MIN_OBSTACLE_COUNT + 1));
+    let attempts = 0;
+    while (this.obstacles.length < target && attempts < 800) {
       attempts += 1;
       const type = this._pickRandomType();
       const obstacleSize = this._getSizeForType(type);
       const position = this._pickSpawnPosition(obstacleSize);
-
       if (!position) {
         continue;
       }
-
-      const obstacle = new Obstacle(this.scene, type, new THREE.Vector3(position.x, 0, position.z));
-      this.obstacles.push(obstacle);
+      this.obstacles.push(new Obstacle(this.scene, type, new THREE.Vector3(position.x, 0, position.z)));
     }
 
     this.updateBoundingBoxes();
+  }
+
+  _pickZonePosition(zone, size) {
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.random() * zone.radius;
+      const candidate = {
+        x: zone.x + Math.cos(angle) * radius,
+        z: zone.z + Math.sin(angle) * radius,
+      };
+      if (!this._isFarFromReservedZones(candidate, size)) {
+        continue;
+      }
+      if (!this._isFarFromExistingObstacles(candidate, size)) {
+        continue;
+      }
+      const marginX = size.x / 2 + WALL_THICKNESS / 2 + 1;
+      const marginZ = size.z / 2 + WALL_THICKNESS / 2 + 1;
+      if (
+        candidate.x < -ARENA_HALF + marginX || candidate.x > ARENA_HALF - marginX
+        || candidate.z < -ARENA_HALF + marginZ || candidate.z > ARENA_HALF - marginZ
+      ) {
+        continue;
+      }
+      return candidate;
+    }
+    return null;
   }
 
   updateBoundingBoxes() {

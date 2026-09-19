@@ -1,4 +1,5 @@
-const GAME_VERSION = 'Robo Arena Alpha v0.2';
+import { GAME_VERSION } from '../constants.js';
+import { MenuSystem } from './MenuSystem.js';
 
 export class UISystem {
   constructor() {
@@ -9,6 +10,7 @@ export class UISystem {
     this._onSettings = null;
     this._damageFlashIntensity = 0;
     this._displayedBossHealth = 0;
+    this._displayedBossPhase = 0;
 
     this.root = document.createElement('div');
     this.root.className = 'ui-root';
@@ -19,18 +21,18 @@ export class UISystem {
     this.crosshair = this._createCrosshair();
     this.damageFlash = this._createDamageFlash();
     this.waveAnnouncement = this._createWaveAnnouncement();
-    this.mainMenu = this._createMainMenu();
-    this.pauseMenu = this._createPauseMenu();
+    this.menus = new MenuSystem(this.root);
+    this.mainMenu = this.menus.mainMenu;
+    this.pauseMenu = this.menus.pauseMenu;
 
     this.root.append(
       this.hud,
       this.bossHud,
       this.crosshair,
       this.damageFlash,
-      this.waveAnnouncement,
-      this.mainMenu,
-      this.pauseMenu
+      this.waveAnnouncement
     );
+
   }
 
   _createHud() {
@@ -60,6 +62,10 @@ export class UISystem {
     this.enemiesText = this._createStat(stats, 'Enemies');
     this.killsText = this._createStat(stats, 'Kills');
     this.fpsText = this._createStat(stats, 'FPS');
+    this.scoreText = this._createStat(stats, 'Score');
+    this.comboText = this._createStat(stats, 'Combo');
+    this._displayedScore = -1;
+    this._displayedCombo = -1;
 
     this.powerUpsText = document.createElement('div');
     this.powerUpsText.className = 'powerup-text';
@@ -101,9 +107,9 @@ export class UISystem {
     const hud = document.createElement('div');
     hud.className = 'boss-hud hidden';
 
-    const label = document.createElement('div');
-    label.className = 'boss-hud-label';
-    label.textContent = 'BOSS';
+    this.bossPhaseLabel = document.createElement('div');
+    this.bossPhaseLabel.className = 'boss-hud-label';
+    this.bossPhaseLabel.textContent = 'BOSS — PHASE I';
 
     const healthBar = document.createElement('div');
     healthBar.className = 'boss-health-bar';
@@ -114,7 +120,7 @@ export class UISystem {
     this.bossHealthText = document.createElement('div');
     this.bossHealthText.className = 'boss-hud-value';
 
-    hud.append(label, healthBar, this.bossHealthText);
+    hud.append(this.bossPhaseLabel, healthBar, this.bossHealthText);
     return hud;
   }
 
@@ -130,83 +136,56 @@ export class UISystem {
     return announcement;
   }
 
-  _createMainMenu() {
-    const menu = document.createElement('div');
-    menu.className = 'menu-overlay';
-
-    const panel = document.createElement('div');
-    panel.className = 'menu-panel';
-    panel.innerHTML = `
-      <h1>ROBO ARENA</h1>
-      <p class="menu-subtitle">Alpha v0.2</p>
-    `;
-
-    const playButton = document.createElement('button');
-    playButton.className = 'menu-button';
-    playButton.textContent = 'Play';
-    playButton.addEventListener('click', () => {
-      this._onPlay?.();
-    });
-
-    const settingsButton = document.createElement('button');
-    settingsButton.className = 'menu-button menu-button-secondary';
-    settingsButton.textContent = 'Settings';
-    settingsButton.addEventListener('click', () => {
-      this._onSettings?.();
-      this.showNotification('Settings: Use WASD to move, Space to shoot, Shift to dash.');
-    });
-
-    const version = document.createElement('p');
-    version.className = 'version-text';
-    version.textContent = GAME_VERSION;
-
-    panel.append(playButton, settingsButton, version);
-    menu.appendChild(panel);
-    return menu;
-  }
-
-  _createPauseMenu() {
-    const menu = document.createElement('div');
-    menu.className = 'menu-overlay hidden';
-
-    const panel = document.createElement('div');
-    panel.className = 'menu-panel';
-    panel.innerHTML = '<h2>Paused</h2>';
-
-    const resumeButton = document.createElement('button');
-    resumeButton.className = 'menu-button';
-    resumeButton.textContent = 'Resume';
-    resumeButton.addEventListener('click', () => this._onResume?.());
-
-    const restartButton = document.createElement('button');
-    restartButton.className = 'menu-button';
-    restartButton.textContent = 'Restart';
-    restartButton.addEventListener('click', () => this._onRestart?.());
-
-    const mainMenuButton = document.createElement('button');
-    mainMenuButton.className = 'menu-button menu-button-secondary';
-    mainMenuButton.textContent = 'Main Menu';
-    mainMenuButton.addEventListener('click', () => this._onMainMenu?.());
-
-    panel.append(resumeButton, restartButton, mainMenuButton);
-    menu.appendChild(panel);
-    return menu;
-  }
-
   setCallbacks(callbacks) {
     this._onPlay = callbacks.onPlay ?? null;
     this._onRestart = callbacks.onRestart ?? null;
     this._onResume = callbacks.onResume ?? null;
     this._onMainMenu = callbacks.onMainMenu ?? null;
     this._onSettings = callbacks.onSettings ?? null;
+    this.menus.setCallbacks({
+      onPlay: () => this._onPlay?.(),
+      onResume: () => this._onResume?.(),
+      onRestart: () => this._onRestart?.(),
+      onMainMenu: () => this._onMainMenu?.(),
+      onSettings: () => this._onSettings?.(),
+      onControls: () => this.menus.showControls(),
+      onStatistics: () => callbacks.onStatistics?.(),
+      onGameModes: () => this.menus.showGameModes(),
+      onSelectMode: (mode) => callbacks.onSelectMode?.(mode),
+      onQuit: () => callbacks.onQuit?.(),
+    });
+  }
+
+  bindSettings(saveManager, audioManager, graphicsSystem) {
+    this.menus.bindSettingsControls(saveManager, audioManager, graphicsSystem);
+  }
+
+  showStatistics(stats, achievements) {
+    this.menus.showStatistics(stats, achievements);
+  }
+
+  showGameOver(payload) {
+    this.menus.showGameOver(payload);
+  }
+
+  hideGameOver() {
+    this.menus.hideGameOver();
   }
 
   setMainMenuVisible(visible) {
-    this.mainMenu.classList.toggle('hidden', !visible);
+    if (visible) {
+      this.menus.showMainMenu();
+    } else {
+      this.mainMenu.classList.add('hidden');
+    }
   }
 
   setPauseMenuVisible(visible) {
-    this.pauseMenu.classList.toggle('hidden', !visible);
+    if (visible) {
+      this.menus.showPauseMenu();
+    } else {
+      this.menus.hidePauseMenu();
+    }
   }
 
   setInGameHudVisible(visible) {
@@ -236,6 +215,20 @@ export class UISystem {
     this.waveAnnouncement.classList.add('wave-announce-active');
   }
 
+  /** Called when the boss enters a new combat phase. */
+  showBossPhaseChange(phase, label) {
+    this._displayedBossPhase = phase;
+    this.bossPhaseLabel.textContent = `BOSS — ${label}`;
+    this.bossHud.classList.remove('boss-hud-phase-2', 'boss-hud-phase-3', 'boss-hud-transition');
+    if (phase >= 3) {
+      this.bossHud.classList.add('boss-hud-phase-3');
+    } else if (phase >= 2) {
+      this.bossHud.classList.add('boss-hud-phase-2');
+    }
+    this.bossHud.classList.add('boss-hud-transition');
+    this.showNotification(label);
+  }
+
   /**
    * Updates weapon HUD only when the active weapon changes.
    * @param {{ id: string, name: string }} weapon
@@ -263,9 +256,9 @@ export class UISystem {
    * @param {number} enemiesRemaining
    * @param {number} fps
    * @param {{name: string, remaining: number}[]} activePowerUps
-   * @param {{health: number, maxHealth: number} | null} bossHealthState
+   * @param {{health: number, maxHealth: number, phase?: number, transitioning?: boolean} | null} bossHealthState
    */
-  update(health, maxHealth, kills, wave, enemiesRemaining, fps, activePowerUps, bossHealthState = null) {
+  update(health, maxHealth, kills, wave, enemiesRemaining, fps, activePowerUps, bossHealthState = null, score = 0, combo = 0) {
     const normalizedHealth = Math.max(0, Math.min(1, maxHealth > 0 ? health / maxHealth : 0));
     this.healthBarFill.style.width = `${(normalizedHealth * 100).toFixed(1)}%`;
     this.healthText.textContent = `${Math.max(0, Math.floor(health))} / ${Math.floor(maxHealth)}`;
@@ -273,6 +266,14 @@ export class UISystem {
     this.enemiesText.textContent = `${enemiesRemaining}`;
     this.killsText.textContent = `${kills}`;
     this.fpsText.textContent = `${Math.round(fps)}`;
+    if (score !== this._displayedScore) {
+      this._displayedScore = score;
+      this.scoreText.textContent = `${score}`;
+    }
+    if (combo !== this._displayedCombo) {
+      this._displayedCombo = combo;
+      this.comboText.textContent = combo > 0 ? `x${combo}` : '—';
+    }
 
     this.powerUpsText.textContent = activePowerUps.length === 0
       ? 'Power-ups: None'
@@ -283,7 +284,20 @@ export class UISystem {
     if (!bossHealthState) {
       this.bossHud.classList.add('hidden');
       this._displayedBossHealth = 0;
+      this._displayedBossPhase = 0;
       return;
+    }
+
+    const bossPhase = bossHealthState.phase ?? 1;
+    if (bossPhase !== this._displayedBossPhase && !bossHealthState.transitioning) {
+      this._displayedBossPhase = bossPhase;
+      const phaseLabels = { 1: 'PHASE I', 2: 'PHASE II', 3: 'PHASE III — ENRAGED' };
+      this.bossPhaseLabel.textContent = `BOSS — ${phaseLabels[bossPhase] ?? 'PHASE I'}`;
+      this.bossHud.classList.toggle('boss-hud-phase-2', bossPhase === 2);
+      this.bossHud.classList.toggle('boss-hud-phase-3', bossPhase === 3);
+    }
+    if (!bossHealthState.transitioning) {
+      this.bossHud.classList.remove('boss-hud-transition');
     }
 
     const bossHealth = Math.max(0, bossHealthState.health);

@@ -25,6 +25,7 @@ export class InputSystem {
     this._shootCooldownMs = 250;
     this._dashQueued = false;
     this._enabled = true;
+    this._mobileControls = null;
 
     window.addEventListener('keydown', (event) => {
       if (event.code === 'Escape' && !event.repeat) {
@@ -86,5 +87,24 @@ export class InputSystem {
     }
     this._dashQueued = false;
     return true;
+  }
+
+  attachMobileControls(mobileControls) {
+    this._mobileControls = mobileControls;
+  }
+
+  consumeMobileDash() {
+    return this._mobileControls?.consumeDash() ?? false;
+  }
+
+  pollMobileShoot() {
+    if (!this._enabled || !this._mobileControls?.isShootPressed()) {
+      return;
+    }
+    const now = performance.now();
+    if (now - this._lastShootTime >= this._shootCooldownMs) {
+      this._lastShootTime = now;
+      this.onShoot?.();
+    }
   }
 }

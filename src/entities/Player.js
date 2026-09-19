@@ -38,6 +38,17 @@ export class Player {
     this._dashRemainingSeconds = 0;
     this._dashCooldownUntilMs = 0;
     this._damageMultiplier = 1;
+    /** @type {(() => {x:number,y:number}) | null} */
+    this._mobileMoveProvider = null;
+    this._onDash = null;
+  }
+
+  setMobileMoveProvider(provider) {
+    this._mobileMoveProvider = provider;
+  }
+
+  setDashCallback(callback) {
+    this._onDash = callback;
   }
 
   /** Builds the robot as a THREE.Group with body, head, and wheels. */
@@ -84,9 +95,11 @@ export class Player {
    */
   update(input, delta) {
     const now = performance.now();
-    if (input.consumeDashPressed() && now >= this._dashCooldownUntilMs) {
+    const dashRequested = input.consumeDashPressed?.() || input.consumeMobileDash?.();
+    if (dashRequested && now >= this._dashCooldownUntilMs) {
       this._dashRemainingSeconds = PLAYER_DASH_DURATION_SECONDS;
       this._dashCooldownUntilMs = now + PLAYER_DASH_COOLDOWN_SECONDS * 1000;
+      this._onDash?.();
     }
 
     if (input.isPressed('a')) {
@@ -106,6 +119,12 @@ export class Player {
     if (input.isPressed('s')) {
       this._movement.x += Math.sin(rotationY) * PLAYER_SPEED;
       this._movement.z += Math.cos(rotationY) * PLAYER_SPEED;
+    }
+
+    const mobile = this._mobileMoveProvider?.();
+    if (mobile && (mobile.x !== 0 || mobile.y !== 0)) {
+      this._movement.x += mobile.x * PLAYER_SPEED * 0.95;
+      this._movement.z += mobile.y * PLAYER_SPEED * 0.95;
     }
 
     if (this._movement.lengthSq() > 0) {

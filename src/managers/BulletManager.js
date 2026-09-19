@@ -114,7 +114,8 @@ export class BulletManager {
 
     if (spawnEffects) {
       this._spawnFlash(origin, direction);
-      this._spawnTrail(origin, direction, 0xfff2b0, 0.22);
+      this._spawnTrail(origin, direction, 0xfff2b0, 0.28);
+      this._spawnTrail(origin, direction, 0xffffff, 0.12);
     }
   }
 
@@ -122,7 +123,7 @@ export class BulletManager {
     this.enemyBullets.push(bullet);
   }
 
-  updatePlayerBullets(enemies, onEnemyKilled, onBossHit = null) {
+  updatePlayerBullets(enemies, onEnemyKilled, onBossHit = null, onEnemyHit = null) {
     let kills = 0;
 
     for (const bullet of this.playerBullets) {
@@ -163,8 +164,10 @@ export class BulletManager {
           continue;
         }
 
-        const died = enemy.takeDamage(bullet.damage, bullet.direction);
-        this._spawnSparks(bullet.mesh.position, 8, 0xffa45c, 0.4);
+        const damage = bullet.damage ?? 10;
+        const died = enemy.takeDamage(damage, bullet.direction);
+        onEnemyHit?.(enemy, damage);
+        this._spawnSparks(bullet.mesh.position, 10, 0xffa45c, 0.42);
         this._removePlayerBullet(i);
         if (died) {
           this.spawnEnemyExplosion(enemy.mesh.position);
@@ -285,6 +288,21 @@ export class BulletManager {
     this._spawnSparks(position, 54, 0xff5b42, 0.82, 2.1);
     this._spawnSmoke(position, 1.5, 0.65, 1.4);
     this._spawnShockwave(position, 0.95);
+  }
+
+  /** Phase transition burst at the boss position — uses pooled VFX only. */
+  spawnBossPhaseTransition(position, phase = 2) {
+    const sparkCount = phase >= 3 ? 36 : 24;
+    const color = phase >= 3 ? 0xff3a5a : 0xff7a42;
+    this._spawnSparks(position, sparkCount, color, 0.72, phase >= 3 ? 1.6 : 1.25);
+    this._spawnSmoke(position, phase >= 3 ? 1.35 : 0.95, 0.55, phase >= 3 ? 1.35 : 1.05);
+    this._spawnShockwave(position, phase >= 3 ? 1.15 : 0.85);
+  }
+
+  spawnBossAreaSlam(position) {
+    this._spawnSparks(position, 28, 0xff5540, 0.58, 1.5);
+    this._spawnSmoke(position, 1.1, 0.48, 1.2);
+    this._spawnShockwave(position, 1.05);
   }
 
   emitPlayerDashTrail(position) {

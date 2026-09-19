@@ -87,6 +87,9 @@ export class Boss {
     this._smokes = [];
     this._targetVector = new THREE.Vector3();
     this._spawnOffset = new THREE.Vector3();
+    this._phase = 1;
+    this._isAreaSlamWarning = false;
+    this._transitionPulse = 0;
 
     this._buildModel();
     this._initEffectPool(scene);
@@ -182,15 +185,25 @@ export class Boss {
   update(delta, playerPosition, moving, chargeWarning) {
     this._time += delta;
     this._isMoving = moving;
-    this._isChargeWarning = chargeWarning;
+    this._isChargeWarning = chargeWarning || this._isAreaSlamWarning;
+    if (this._transitionPulse > 0) {
+      this._transitionPulse = Math.max(0, this._transitionPulse - delta);
+    }
     if (this._isMoving) {
       this._walkTime += delta * 8;
     }
 
-    const breath = Math.sin(this._time * 2.3) * 0.06;
-    const sway = Math.sin(this._time * 1.5) * 0.03;
+    const phaseIntensity = this._phase >= 3 ? 1.35 : (this._phase >= 2 ? 1.12 : 1);
+    const breath = Math.sin(this._time * 2.3 * phaseIntensity) * (0.06 + this._phase * 0.012);
+    const sway = Math.sin(this._time * 1.5 * phaseIntensity) * (0.03 + this._phase * 0.008);
     this._body.position.y = breath;
     this.group.rotation.z = sway;
+    if (this._transitionPulse > 0) {
+      const pulse = (this._transitionPulse / 0.85) * 0.18;
+      this.group.scale.setScalar(1.18 + pulse);
+    } else {
+      this.group.scale.setScalar(1.18 + (this._phase >= 3 ? 0.06 : this._phase >= 2 ? 0.03 : 0));
+    }
 
     const stepA = Math.sin(this._walkTime) * 0.14;
     const stepB = Math.sin(this._walkTime + Math.PI) * 0.14;
@@ -328,10 +341,37 @@ export class Boss {
 
   setChargeWarning(active) {
     this._isChargeWarning = active;
-    const intensity = active ? 2 : 1.4;
+    const intensity = active ? 2 : (this._phase >= 3 ? 1.85 : 1.4);
     this._leftEye.material.emissiveIntensity = intensity;
     this._rightEye.material.emissiveIntensity = intensity;
-    this._antennaTip.material.emissiveIntensity = active ? 2.1 : 1.3;
+    this._antennaTip.material.emissiveIntensity = active ? 2.1 : (this._phase >= 3 ? 1.75 : 1.3);
+  }
+
+  setAreaSlamWarning(active) {
+    this._isAreaSlamWarning = active;
+    if (active) {
+      this._core.material.emissiveIntensity = 2.2;
+      this._core.material.color.set(0xff6a2a);
+    }
+  }
+
+  /** @param {number} phase */
+  setPhase(phase) {
+    this._phase = phase;
+    this._transitionPulse = 0.85;
+    if (phase >= 3) {
+      this._leftEye.material.color.set(0xff3030);
+      this._rightEye.material.color.set(0xff3030);
+      this._core.material.emissiveIntensity = 1.85;
+    } else if (phase >= 2) {
+      this._leftEye.material.color.set(0xff8855);
+      this._rightEye.material.color.set(0xff8855);
+      this._core.material.emissiveIntensity = 1.35;
+    }
+  }
+
+  get phase() {
+    return this._phase;
   }
 
   dispose(scene) {

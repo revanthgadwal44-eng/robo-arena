@@ -53,11 +53,13 @@ export class WaveManager {
     return this.wave;
   }
 
-  reset() {
+  reset(options = {}) {
     this.bossManager.clearAll();
     this._pendingBossSpawn = false;
     this.wave = 1;
     this.enemiesKilledThisWave = 0;
-    this.spawnWave();
+    if (!options.skipSpawn) {
+      this.spawnWave();
+    }
   }
 }

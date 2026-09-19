@@ -46,6 +46,7 @@ export class EnemyManager {
    this._upAxis = new THREE.Vector3(0, 1, 0);
    this._getPlayerPosition = null;
    this._shootingEnabled = true;
+   this._healthBarTick = 0;
   }
 
   setPlayerPositionProvider(getPlayerPosition) {
@@ -190,8 +191,14 @@ export class EnemyManager {
        }
      }
 
-     enemy.updateHealthBar(camera);
      meleeDamage += enemy.getMeleeDamage(playerPosition);
+   }
+
+   this._healthBarTick += 1;
+   if (this._healthBarTick % 2 === 0) {
+     for (const enemy of this.enemies) {
+       enemy.updateHealthBar(camera);
+     }
    }
    return meleeDamage;
   }

@@ -129,6 +129,61 @@ export const BOSS_CRITICAL_COLOR = 0xff4141;
 export const BOSS_MISSILE_SPEED = 0.12;
 export const BOSS_MISSILE_SPLASH_RADIUS = 2.8;
 
+/** Boss phase thresholds (health ratio). */
+export const BOSS_PHASE2_HEALTH_RATIO = 0.7;
+export const BOSS_PHASE3_HEALTH_RATIO = 0.35;
+export const BOSS_PHASE_TRANSITION_SECONDS = 0.85;
+export const BOSS_AREA_SLAM_WINDUP_SECONDS = 1.05;
+export const BOSS_AREA_SLAM_DAMAGE = 14;
+export const BOSS_AREA_SLAM_RADIUS = 5.8;
+export const BOSS_AREA_SLAM_INTERVAL_SECONDS = 9;
+
+export const BOSS_PHASES = {
+  ONE: 1,
+  TWO: 2,
+  THREE: 3,
+};
+
+/** Per-phase combat modifiers — applied on top of base boss stats. */
+export const BOSS_PHASE_CONFIG = {
+  [BOSS_PHASES.ONE]: {
+    label: 'PHASE I',
+    speedMultiplier: 1,
+    shotCooldownMultiplier: 1,
+    shotsPerBurst: BOSS_SHOTS_PER_BURST,
+    chargeSpeedMultiplier: 1,
+    chaseMinDurationMultiplier: 1,
+    cooldownMultiplier: 1,
+    fanShots: 0,
+    radialShots: 0,
+    bonusMissiles: 0,
+  },
+  [BOSS_PHASES.TWO]: {
+    label: 'PHASE II',
+    speedMultiplier: 1.35,
+    shotCooldownMultiplier: 0.72,
+    shotsPerBurst: 5,
+    chargeSpeedMultiplier: 1.22,
+    chaseMinDurationMultiplier: 0.72,
+    cooldownMultiplier: 0.82,
+    fanShots: 5,
+    radialShots: 0,
+    bonusMissiles: 1,
+  },
+  [BOSS_PHASES.THREE]: {
+    label: 'PHASE III — ENRAGED',
+    speedMultiplier: 1.62,
+    shotCooldownMultiplier: 0.52,
+    shotsPerBurst: 6,
+    chargeSpeedMultiplier: 1.48,
+    chaseMinDurationMultiplier: 0.55,
+    cooldownMultiplier: 0.62,
+    fanShots: 5,
+    radialShots: 8,
+    bonusMissiles: 2,
+  },
+};
+
 /** Enemy archetypes — stats drive behavior via mesh.userData at spawn time. */
 export const ENEMY_TYPES = {
   NORMAL: 'normal',
@@ -218,3 +273,32 @@ export const PICKUP_DURATION_SECONDS = 10;
 export const PICKUP_RAPID_FIRE_COOLDOWN_MS = 80;
 export const PICKUP_RESPAWN_MIN_SECONDS = 15;
 export const PICKUP_RESPAWN_MAX_SECONDS = 20;
+
+export const GAME_VERSION = 'v0.3.0';
+
+export const GAME_MODES = {
+  SURVIVAL: 'survival',
+  BOSS_RUSH: 'boss_rush',
+};
+
+export const BOSS_RUSH_BOSS_COUNT = 4;
+
+/** Strategic arena layout zones — used for obstacle placement and spawn bias. */
+export const ARENA_ZONES = {
+  OPEN_CENTER: { x: 0, z: 0, radius: 10, label: 'open' },
+  COVER_NW: { x: -22, z: -22, radius: 14, label: 'cover' },
+  COVER_NE: { x: 22, z: -22, radius: 14, label: 'cover' },
+  COVER_SW: { x: -22, z: 22, radius: 14, label: 'cover' },
+  COVER_SE: { x: 22, z: 22, radius: 14, label: 'cover' },
+  SPAWN_N: { x: 0, z: -28, radius: 12, label: 'spawn' },
+  SPAWN_S: { x: 0, z: 28, radius: 12, label: 'spawn' },
+  SPAWN_E: { x: 28, z: 0, radius: 12, label: 'spawn' },
+  SPAWN_W: { x: -28, z: 0, radius: 12, label: 'spawn' },
+  BOSS_ARENA: { x: 0, z: -18, radius: 16, label: 'boss' },
+};
+
+export const GRAPHICS_QUALITY = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+};
